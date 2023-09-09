@@ -44,7 +44,7 @@ urls <- c("https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_1
 Import_data <- function(urls) {
   webpage <- read_html(urls)
   
-  # Realiza el web scraping según la estructura de la página
+  # Realiza el web scraping del sitio web donde esta la información
   table2 <- webpage %>% 
     html_nodes("table") %>% 
     html_table(fill = TRUE)
