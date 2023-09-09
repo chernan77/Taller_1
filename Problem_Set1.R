@@ -56,3 +56,4 @@ Import_data <- function(urls) {
 Tablas <- map(urls, Import_data)
 dataframes <- map(Tablas, as.data.frame)
 Tabla_Total <- bind_rows(dataframes)
+
