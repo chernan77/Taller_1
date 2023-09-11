@@ -263,3 +263,30 @@ Tabla_Edad_Bootstrap = Res_Edad$t
 
 Interval_ <- quantile(Tabla_Edad_Bootstrap,c(0.025,0.975))
 print(Interval_)
+
+# Secuencia de edades para el gráfico
+Edad_seq <- seq(min(Tabla_4$Edad), max(Tabla_4$Edad), length.out = 1000)
+
+# Perfil estimado de ingresos usando los coeficientes
+Perfil_Ingreso <- exp(predict(Mod2, newdata = data.frame(Edad = Edad_seq, Edad2 = Edad_seq^2)))
+
+# Calcular los intervalos de confianza para el perfil de ingresos
+Interv_Conf <- predict(Mod2, newdata = data.frame(Edad = Edad_seq, Edad2 = Edad_seq^2), interval = "confidence")
+
+# Extraer los límites inferior (lwr) y superior (upr) de los intervalos de confianza
+lwr <- exp(Interv_Conf[, "lwr"])
+upr <- exp(Interv_Conf[, "upr"])
+
+library(jpeg)
+jpeg(file = "C:/Output R/Taller1/Graph1.jpeg", width = 900, height = 600)
+# Crear el gráfico
+plot(Edad_seq, Perfil_Ingreso, type = "l", xlab = "Edad", ylab = "Salario por Hora Estimado", main = "Perfil Estimado de Edad-Ingresos")
+
+# Agregar líneas para los intervalos de confianza
+lines(Edad_seq, lwr, col = "red", lty = 2)
+lines(Edad_seq, upr, col = "red", lty = 2)
+
+# Puedes calcular la edad máxima encontrando la edad donde el ingreso es máximo
+Edad_Max <- Edad_seq[which.max(Perfil_Ingreso)]
+text(Edad_Max, max(Perfil_Ingreso), "Edad Maxima", pos = 3, col = "blue")
+dev.off() 
