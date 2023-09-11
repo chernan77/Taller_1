@@ -315,3 +315,69 @@ Tabla_4 <-Tabla_4 %>% mutate(lw_hora_Resid=lm(lw_hora~ Edad + Edad2+ Educ + exp 
 #3) Regresion de los residuos de la Reg1 sobre los residuos de la Reg2
 Reg_bs2<-lm(lw_hora_Resid ~ mujer_Resid,Tabla_4)
 stargazer(Reg_bs1,Reg_bs2,type="text",digits=5, omit.stat=c("ser","f","adj.rsq")) 
+
+B <- 1000  
+
+# Matrices para almacenar los resultados de bootstrap_modl1 y bootstrap_model2
+coef_bootstrap_modl1 <- matrix(NA, nrow = B, ncol = 2)  # Coeficientes de bootstrap_modl1
+coef_bootstrap_model2 <- matrix(NA, nrow = B, ncol = 2)  # Coeficientes de bootstrap_model2
+
+# Realizar el proceso de Bootstrap
+for (i in 1:B) {
+  # Crear una muestra bootstrap sin valores NA
+  sample_indices <- sample(1:nrow(Tabla_4), replace = TRUE)
+  sample_data <- Tabla_4[sample_indices, ]
+  
+  
+  # Ajustar brecha_salarial1 en la muestra bootstrap
+  bootstrap_modl1 <- lm(lw_hora ~ mujer + Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas, data = sample_data)
+  
+  # Ajustar brecha_salarial2 en la muestra bootstrap
+  sample_data<- sample_data %>%
+    mutate(mujerResidF  = lm(mujer ~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas, data = sample_data)$residuals)
+  
+  sample_data<- sample_data %>%
+    mutate(lw_horaResidF = lm(lw_hora ~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas, data = sample_data)$residuals)
+  
+  bootstrap_model2 <- lm(lw_horaResidF ~ mujerResidF, data = sample_data)
+  
+  # Almacenar los coeficientes estimados y errores estándar
+  coef_bootstrap_modl1[i, 1] <- coef(bootstrap_modl1)["mujer"]
+  coef_bootstrap_modl1[i, 2] <- summary(bootstrap_modl1)$coefficients["mujer", "Std. Error"]
+  
+  coef_bootstrap_model2[i, 1] <- coef(bootstrap_model2)["mujerResidF"]
+  coef_bootstrap_model2[i, 2] <- summary(bootstrap_model2)$coefficients["mujerResidF", "Std. Error"]
+}
+
+# Calcular los intervalos de confianza Bootstrap para los coeficientes
+interval_modl1 <- quantile(coef_bootstrap_modl1, c(0.025, 0.975))
+interval_model2 <- quantile(coef_bootstrap_model2, c(0.025, 0.975))
+
+# Imprimir los intervalos de confianza para bootstrap_modl1
+cat("Intervalo de confianza Bootstrap para el coeficiente de mujer en bootstrap_modl1:", interval_modl1[1], "-", interval_modl1[2], "\n")
+
+# Imprimir los intervalos de confianza para bootstrap_model2
+cat("Intervalo de confianza Bootstrap para el coeficiente de mujerResidF en bootstrap_model2:", interval_model2[1], "-", interval_model2[2], "\n")
+
+# Visualizar histogramas de coeficientes estimados
+# Establecer una ventana gráfica dividida
+par(mfrow = c(1, 2))  # 1 fila, 2 columnas
+
+
+# Dibujar el histograma para bootstrap_modl1
+Hist_1 <- hist(coef_bootstrap_modl1[, 1], main = "Histograma de Coeficientes - bootstrap_modl1", xlab = "Coeficiente")
+#jpeg(file = "Hist_1.jpeg", width = 800, height = 600)
+plot(Hist_1)
+dev.off()  # Finalizar la exportación
+#ruta_exportacion <- "C:/Output R/Taller1/Hist1.jpeg"
+
+# Dibujar el histograma para bootstrap_model2
+Hist_2 <- hist(coef_bootstrap_model2[, 1], main = "Histograma de Coeficientes - bootstrap_model2", xlab = "Coeficiente")
+
+
+# Restaurar la configuración gráfica original
+par(mfrow = c(1, 1))  # Restaurar a 1 fila, 1 columna
+
+print(coef_bootstrap_modl1)
+print(coef_bootstrap_model2)
+
