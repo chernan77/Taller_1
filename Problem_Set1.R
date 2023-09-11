@@ -277,8 +277,8 @@ Interv_Conf <- predict(Mod2, newdata = data.frame(Edad = Edad_seq, Edad2 = Edad_
 lwr <- exp(Interv_Conf[, "lwr"])
 upr <- exp(Interv_Conf[, "upr"])
 
-library(jpeg)
-jpeg(file = "C:/Output R/Taller1/Graph1.jpeg", width = 900, height = 600)
+#library(jpeg)
+#jpeg(file = "C:/Output R/Taller1/Graph1.jpeg", width = 900, height = 600)
 # Crear el gráfico
 plot(Edad_seq, Perfil_Ingreso, type = "l", xlab = "Edad", ylab = "Salario por Hora Estimado", main = "Perfil Estimado de Edad-Ingresos")
 
