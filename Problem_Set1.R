@@ -205,3 +205,30 @@ Tabla_4$exp2 <- Tabla_4$exp^2
 Tabla_4$Edad2 <- Tabla_4$Edad^2
 Tabla_4$exp2 <- Tabla_4$exp^2
 # Vector de Covariables
+
+#Regresión por MCO
+mod <- lm.fit <- lm(lw_hora ~ Educ + exp + exp2 + Sexo + Edad + Horas_trabajadas + Tamaño_empresa + Sector + Estrato, data = Tabla_4)
+summary(lm.fit)
+
+stargazer(mod,type="text", omit.stat=c("ser","f","adj.rsq"))
+
+Tabla_5 <- Tabla_4
+
+Tabla_5 <- Tabla_5 %>%
+  mutate(Sexo = ifelse(Sexo == 0, "Mujer", "Hombre"))
+
+#Tabla_4$Sexo <- ifelse(Tabla_4$Sexo == 0, "Mujer", "Hombre")
+Tabla_Sexo <- Tabla_5 %>%
+  group_by(Sexo) %>%
+  summarize(Ingreso_Promedio = mean(w_hora),
+            Salario_Promedio = mean(y_salary_m),
+            Ingreso_Laboral = mean(y_ingLab_m_ha),
+            Ingreso_Total = mean(y_total_m))
+colnames(Tabla_Sexo) <- c("Sexo", "Salario Real por Hora","Salario Nominal Mensual","Ingreso Laboral","Ingreso Total" )
+Tabla_Sexo
+
+# Dar formato a la tabla con kableExtra
+Tabla_Sexo <- Tabla_Sexo %>%
+  kbl() %>%
+  kable_styling(full_width = FALSE)
+Tabla_Sexo
