@@ -1,23 +1,23 @@
 # Taller 1: Big Data y Machine Learning para Econonomia Aplicada
 # Cargamos los paquetes
 
-#install.packages("rvest")
-#install.packages("xml2")
-#install.packages("purrr")
-#install.packages("writexl")
-#install.packages("tidyverse")
-#install.packages("kableExtra")
-#install.packages("knitr")
-#install.packages("flextable")
-#install.packages("officer")
-#install.packages("ggplot2")
-#install.packages("boot")
-#install.packages("lmtest")
-#install.packages("car")
-#install.packages("dplyr")
-#install.packages("xtable")
-#install.packages("DT")
-#install.packages("jpeg")
+install.packages("rvest")
+install.packages("xml2")
+install.packages("purrr")
+install.packages("writexl")
+install.packages("tidyverse")
+install.packages("kableExtra")
+install.packages("knitr")
+install.packages("flextable")
+install.packages("officer")
+install.packages("ggplot2")
+install.packages("boot")
+install.packages("lmtest")
+install.packages("car")
+install.packages("dplyr")
+install.packages("xtable")
+install.packages("DT")
+install.packages("jpeg")
 install.packages("openxlsx")
 install.packages("readxl")
 
@@ -282,7 +282,7 @@ lwr <- exp(Interv_Conf[, "lwr"])
 upr <- exp(Interv_Conf[, "upr"])
 
 #library(jpeg)
-jpeg(file = "C:/Output R/Taller1/Graph1.jpeg", width = 900, height = 600)
+#jpeg(file = "C:/Output R/Taller1/Graph1.jpeg", width = 900, height = 600)
 # Crear el gráfico
 plot(Edad_seq, Perfil_Ingreso, type = "l", xlab = "Edad", ylab = "Salario por Hora Estimado", main = "Perfil Estimado de Edad-Ingresos")
 
@@ -388,111 +388,28 @@ print(coef_bootstrap_model2)
 ###----------------------------------------------------------------------------------------
 ###---------------------------------Perfil de Ingreso para Mujer---------------------------
 
-# Filtrar las observaciones donde sexo es igual a 1
-Datos_Mujer <- subset(Tabla_4, mujer == 1)
+Mod4 <- lm(lw_hora ~ Edad + Edad2 + mujer + Edad*mujer + Edad2*mujer, data = Tabla_4)
+stargazer(Mod4, type="text", omit.stat=c("ser","f","adj.rsq"))
 
-Mod3 <- lm(lw_hora ~ Edad + Edad2, data = Datos_Mujer)
-stargazer(Mod3,type="text",digits=5, omit.stat=c("ser","f","adj.rsq"))
-
-
-library(boot)
-Edad_Mod3 <-function(data,index){
+Edad_Maxima <- function(data) {
+  Mod4 <- lm(lw_hora ~ Edad + Edad2 + mujer + Edad*mujer + Edad2*mujer, data = Tabla_4)
   
-  Mod3 <-lm(lw_hora ~ Edad + Edad2, data = Datos_Mujer, subset = index)
+  coefs1 <- coef(Mod4)
   
-  Coefs1<-Mod3$coefficients
+  # El coeficiente correspondiente a 'Edad' en la regresión lineal
+  d1 <- coefs1['Edad']
+  d2 <- coefs1['Edad2']
+  d3<- coefs1['Edad:mujer']
+  d4<- coefs1['Edad2:mujer']
   
-  C2<-Coefs1[2]
-  C3<-Coefs1[3] 
+  # Calcular el punto donde la derivada es igual a cero para hombres
+  edad_maxh<-round(- d1/ (2 * d2))
   
-  Edad_Max1 <- round(C2/(-2*C3)) #La eddad maxima es 46 años
+  # Calcular el punto donde la derivada es igual a cero para mujeres
+  edad_maxm <- round((-d1 - d3) / (2 * (d2+ d4)))
   
-  return(Edad_Max1)
+  return(list(edad_maxima_hombres = edad_maxh, edad_maxima_mujeres =  edad_maxm))
 }
 
-set.seed(123)
-Res_Edad_Mujer <- boot(data=Datos_Mujer, Edad_Mod3, R=1000)
+edades_maximas <- Edad_Maxima(Tabla_4)
 
-Tabla_Bootstrap_Mujer = Res_Edad_Mujer$t
-
-Interv_M <- round(quantile(Tabla_Bootstrap_Mujer,c(0.025,0.975)))
-print(Interv_M)
-
-# Secuencia de edades para el gráfico
-Edad_seq1 <- seq(min(Datos_Mujer$Edad), max(Datos_Mujer$Edad), length.out = 1000)
-
-# Perfil estimado de ingresos usando los coeficientes
-PI_M <- exp(predict(Mod3, newdata = data.frame(Edad = Edad_seq1, Edad2 = Edad_seq1^2)))
-
-# Calcular los intervalos de confianza para el perfil de ingresos
-Int_Conf_M <- predict(Mod3, newdata = data.frame(Edad = Edad_seq1, Edad2 = Edad_seq1^2), interval = "confidence")
-
-# Extraer los límites inferior (lwr) y superior (upr) de los intervalos de confianza
-lwr <- exp(Int_Conf_M[, "lwr"])
-upr <- exp(Int_Conf_M[, "upr"])
-
-library(jpeg)
-jpeg(file = "C:/Output R/Taller1/Graph1.jpeg", width = 800, height = 600)
-plot(Edad_seq1, PI_M, type = "l", xlab = "Edad", ylab = "Salario por Hora Estimado", main = "Perfil Estimado de Edad-Ingresos")
-lines(Edad_seq1, lwr, col = "red", lty = 2)
-lines(Edad_seq1, upr, col = "red", lty = 2)
-Edad_Max_M <- Edad_seq1[which.max(PI_M )]
-text(Edad_Max_M, max(PI_M ), "Edad Maxima Mujer", pos = 3, col = "blue")
-dev.off()
-
-
-###----------------------------------------------------------------------------------------
-###----------------------------------------------------------------------------------------
-###---------------------------------Perfil de Ingreso para Hombre---------------------------
-
-# Filtrar las observaciones donde sexo es igual a 1
-Datos_Hombre <- subset(Tabla_4, Sexo == 1)
-
-Mod4 <- lm(lw_hora ~ Edad + Edad2, data = Datos_Hombre)
-stargazer(Mod4,type="text",digits=5, omit.stat=c("ser","f","adj.rsq"))
-
-
-library(boot)
-Edad_Mod4 <-function(data,index){
-  
-  Mod4 <-lm(lw_hora ~ Edad + Edad2, data = Datos_Hombre, subset = index)
-  
-  Coefs1<-Mod3$coefficients
-  
-  d2<-Coefs1[2]
-  d3<-Coefs1[3] 
-  
-  Edad_Max2 <- round(d2/(-2*d3)) #La eddad maxima es 46 años
-  
-  return(Edad_Max2)
-}
-
-set.seed(123)
-Res_Edad_Hombre <- boot(data=Datos_Hombre, Edad_Mod4, R=1000)
-
-Tabla_Bootstrap_Hombre = Res_Edad_Hombre$t
-
-Interv_H <- round(quantile(Tabla_Bootstrap_Hombre,c(0.025,0.975)))
-print(Interv_H)
-
-# Secuencia de edades para el gráfico
-Edad_seq2 <- seq(min(Datos_Hombre$Edad), max(Datos_Hombre$Edad), length.out = 1000)
-
-# Perfil estimado de ingresos usando los coeficientes
-PI_H <- exp(predict(Mod4, newdata = data.frame(Edad = Edad_seq2, Edad2 = Edad_seq2^2)))
-
-# Calcular los intervalos de confianza para el perfil de ingresos
-Int_Conf_H <- predict(Mod4, newdata = data.frame(Edad = Edad_seq2, Edad2 = Edad_seq2^2), interval = "confidence")
-
-# Extraer los límites inferior (lwr) y superior (upr) de los intervalos de confianza
-lwr <- exp(Int_Conf_H[, "lwr"])
-upr <- exp(Int_Conf_H[, "upr"])
-
-library(jpeg)
-jpeg(file = "C:/Output R/Taller1/Graph2.jpeg", width = 800, height = 600)
-plot(Edad_seq2, PI_H, type = "l", xlab = "Edad", ylab = "Salario por Hora Estimado", main = "Perfil Estimado de Edad-Ingresos")
-lines(Edad_seq2, lwr, col = "red", lty = 2)
-lines(Edad_seq2, upr, col = "red", lty = 2)
-Edad_Max_H <- Edad_seq2[which.max(PI_H )]
-text(Edad_Max_H, max(PI_H ), "Edad Maxima Hombre", pos = 3, col = "blue")
-dev.off()
