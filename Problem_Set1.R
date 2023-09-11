@@ -111,3 +111,97 @@ Porc0_RES <- (sum(Tabla_4$RES == 0, na.rm = TRUE) / sum(!is.na(Tabla_4$RES))) * 
 
 # Imputar el valor 72 a los valores > 72 y 24 a los valores < 24
 Tabla_4$totalHoursWorked[Tabla_4$totalHoursWorked > 72 | Tabla_4$totalHoursWorked < 24] <- 72
+
+# Analisis Descriptivo de los Datos:
+
+#Selección de Variables a Analizar
+Tabla_4 <- Tabla_4 %>%
+  select(estrato1, sex, age,p6210, p6210s1, p6240, p6426,RES, RME, 
+         hoursWorkUsual, p6870, p6920,pet, impa, isa, ie, iof1, iof2, iof3h, iof3i, 
+         iof6,ingtotob, ingtot, depto, maxEducLevel, college, cotPension, wap, ocu, 
+         dsi, pea, inac, totalHoursWorked, formal, informal, cuentaPropia, microEmpresa, 
+         sizeFirm, y_salary_m,  w_hora, y_ingLab_m, y_ingLab_m_ha, y_total_m, y_total_m_ha)
+
+# Renombrar las variables
+Tabla_4 <- Tabla_4 %>% rename(Educ=p6210)
+Tabla_4 <- Tabla_4 %>% rename(Edad=age)
+Tabla_4 <- Tabla_4 %>% rename(Sexo=sex)
+Tabla_4 <- Tabla_4 %>% rename(n_esc_apr=p6210s1)
+Tabla_4 <- Tabla_4 %>% rename(c_ocup=p6240)
+Tabla_4 <- Tabla_4 %>% rename(exp=p6426)
+Tabla_4 <- Tabla_4 %>% rename(n_hsem=hoursWorkUsual)
+Tabla_4 <- Tabla_4 %>% rename(Tamaño_empresa=p6870) # empleados por empresa
+Tabla_4 <- Tabla_4 %>% rename(c_cotiz=p6920)
+Tabla_4 <- Tabla_4 %>% rename(n_ito=ingtotob)
+Tabla_4 <- Tabla_4 %>% rename(Horas_trabajadas=totalHoursWorked)
+Tabla_4 <- Tabla_4 %>% rename(n_it=ingtot)
+Tabla_4 <- Tabla_4 %>% rename(c_mne=maxEducLevel)
+Tabla_4 <- Tabla_4 %>% rename(Estrato=estrato1)
+
+# Revisión de la estadistica descriptiva de algunas variables
+
+Tabla_Stat <- Tabla_4  %>% select(Horas_trabajadas, 
+                                  Educ, 
+                                  Edad, 
+                                  exp,
+                                  Tamaño_empresa,
+                                  Estrato)
+
+stargazer(data.frame(Tabla_Stat), header=FALSE, type='text',title="Variables Included in the Selected Data Set")
+
+
+Tabla_4 <- Tabla_4 %>%
+  mutate(Nivel_Educativo = case_when(
+    Educ == 1 ~ "Ninguno",
+    Educ == 2 ~ "Preescolar",
+    Educ == 3 ~ "Básica primaria",
+    Educ == 4 ~ "Básica secundaria",
+    Educ == 5 ~ "Media",
+    Educ == 6 ~ "Superior o universitaria",
+    Educ == 9 ~ "No sabe",
+    TRUE ~ as.character(Educ)  # Si no coincide con ninguna condición, mantener el valor original como texto
+  ))
+
+
+# Crear una tabla de contingencia segmentada por nivel educativo
+Tabla_Educ <- Tabla_4 %>%
+  group_by(Nivel_Educativo) %>%
+  summarize(
+    Relative_Salary = (sum(w_hora) / sum(Tabla_4$w_hora)) * 100,  # Relación relativa de ingreso en porcentaje
+    Relative_Salary = (sum(y_salary_m) / sum(Tabla_4$y_salary_m)) * 100,  # Relación relativa de salario en porcentaje
+    Relative_IngresoT = (sum(n_it) / sum(Tabla_4$n_it)) * 100  # Relación relativa de ingreso total en porcentaje
+  )
+colnames(Tabla_Educ) <- c("Nivel Educativo", "Salario por hora", "Salario Mensual","Ingreso Total")
+Tabla_Educ
+
+# Dar formato a la tabla con kableExtra
+Tabla_Educ <- Tabla_Educ %>%
+  kbl() %>%
+  kable_styling(full_width = FALSE)
+Tabla_Educ
+
+#### Analisis descriptivo del ingreso
+Salario <- Tabla_4%>%
+  select(y_salary_m,
+         w_hora, y_ingLab_m, y_ingLab_m_ha, y_total_m, y_total_m_ha)
+skim(Salario)
+
+
+#### Analisis descriptivo del salario
+Ingresos <- Tabla_4%>%
+  select(impa, isa, ie, iof1, iof2, iof3h, iof3i, iof6,n_ito,n_it,RES,RME)
+skim(Ingresos)
+
+# Crear una variable dummy del sector, formal o informal
+Tabla_4$Sector <- ifelse(Tabla_4$formal == 1 & Tabla_4$informal == 0, 1, 0)
+
+## Regression de w_hora en función de las variables seleccionadas:
+# Siguiendo el Modelo de Mincer
+# Transformación logaritmica de w_hora
+
+Tabla_4$lw_hora <- log(Tabla_4$w_hora)
+
+Tabla_4$exp2 <- Tabla_4$exp^2
+Tabla_4$Edad2 <- Tabla_4$Edad^2
+Tabla_4$exp2 <- Tabla_4$exp^2
+# Vector de Covariables
