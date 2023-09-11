@@ -232,3 +232,34 @@ Tabla_Sexo <- Tabla_Sexo %>%
   kbl() %>%
   kable_styling(full_width = FALSE)
 Tabla_Sexo
+
+######---------------REGRESION 2 ---------------------------------------##########
+
+#Ajusta el modelo de regresión no lineal:
+Mod2 <- lm(lw_hora ~ Edad + Edad2, data = Tabla_4)
+stargazer(Mod2, type="text", omit.stat=c("ser","f","adj.rsq"))
+
+library(boot)
+Edad_Mod2 <-function(data,index){
+  
+  Mod2 <-lm(lw_hora ~ Edad + Edad2, data = Tabla_4, subset = index)
+  
+  Coefs<-Mod2$coefficients
+  
+  b1<-Coefs[1] 
+  b2<-Coefs[2]
+  b3<-Coefs[3] 
+  
+  Edad_Maxima <- round(b2/(-2*b3)) #La eddad maxima es 46 años
+  
+  return(Edad_Maxima)
+}
+
+set.seed(123)
+Res_Edad <- boot(data=Tabla_4, Edad_Mod2,R=1000)
+Res_Edad
+
+Tabla_Edad_Bootstrap = Res_Edad$t
+
+Interval_ <- quantile(Tabla_Edad_Bootstrap,c(0.025,0.975))
+print(Interval_)
