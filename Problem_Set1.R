@@ -413,3 +413,42 @@ Edad_Maxima <- function(data) {
 
 edades_maximas <- Edad_Maxima(Tabla_4)
 
+# Crear un nuevo conjunto de datos con las edades deseadas para hombres y mujeres
+edadh <- data.frame(
+  Edad = seq(5, 80, by = 1),
+  Edad2 = (seq(5, 80, by = 1))^2,
+  mujer = 0
+)
+
+edadm <- data.frame(
+  Edad = seq(5, 80, by = 1),
+  Edad2 = (seq(5, 80, by = 1))^2,
+  mujer = 1
+)
+
+# Realizar predicciones utilizando el modelo para hombres y mujeres
+predh <- predict(Mod4, newdata = edadh)
+predm <- predict(Mod4, newdata = edadm)
+
+# Crear dataframes para las predicciones de hombres y mujeres
+dfpredh <- data.frame(
+  Edad = edadh$Edad,
+  Predicciones = predh,
+  Genero = 'Hombres'  # Usar comillas simples
+)
+
+dfpredm <- data.frame(
+  Edad = edadm$Edad,
+  Predicciones = predm,
+  Genero = 'Mujeres'  # Usar comillas simples
+)
+
+# Unir los dataframes de hombres y mujeres
+df_predicciones <- rbind(dfpredh , dfpredm )
+
+# Crear el gráfico de dispersión con colores por género
+ggplot(df_predicciones, aes(x = Edad, y = Predicciones, color = Genero)) +
+  geom_line() +
+  labs(x = 'Edad', y = 'Perfil de Ingreso') +
+  ggtitle('Predicción del Perfil de Ingreso en función de la Edad (Hombres vs. Mujeres)') +
+  scale_color_manual(values = c('Hombres' = 'blue', 'Mujeres' = 'red'))
