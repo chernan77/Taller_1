@@ -367,7 +367,7 @@ par(mfrow = c(1, 2))  # 1 fila, 2 columnas
 # Dibujar el histograma para bootstrap_modl1
 Hist_1 <- hist(coef_bootstrap_modl1[, 1], main = "Histograma de Coeficientes - bootstrap_modl1", xlab = "Coeficiente")
 plot(Hist_1)
-dev.off()  # Finalizar la exportación
+dev.off()  
 
 
 # Dibujar el histograma para bootstrap_model2
