@@ -290,3 +290,28 @@ lines(Edad_seq, upr, col = "red", lty = 2)
 Edad_Max <- Edad_seq[which.max(Perfil_Ingreso)]
 text(Edad_Max, max(Perfil_Ingreso), "Edad Maxima", pos = 3, col = "blue")
 dev.off() 
+
+###### SEGUNDO PARTE
+#(a) Begin by estimating and discussing the unconditional wage gap:
+# log(w) = 1 + 2Female + u (3)
+#where Female is an indicator that takes one if the individual in the sample is
+#identied as female.
+
+### Crear la variable mujer
+Tabla_4$mujer <- ifelse(Tabla_4$Sexo == 0, 1, 0)
+brecha_salarial <- lm(lw_hora ~ mujer, data = Tabla_4)
+stargazer(brecha_salarial, type="text", digits=5, omit.stat=c("ser","f","adj.rsq"))
+
+# Regresion log(w_hora) sobre las demas variables
+Reg_bs1<-lm(lw_hora ~ mujer + Edad +Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas, data =Tabla_4)
+stargazer(Reg_bs1,type="text",digits=5, omit.stat=c("ser","f","adj.rsq"))
+
+#1) Regresion var=mujer sobre las demas variables (Reg1)
+Tabla_4 <-Tabla_4 %>% mutate(mujer_Resid=lm(mujer~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas,Tabla_4)$residuals)
+
+#2) Regresion log(w_hora) sobre las demas variables excepto mujer (Reg2)
+Tabla_4 <-Tabla_4 %>% mutate(lw_hora_Resid=lm(lw_hora~ Edad + Edad2+ Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas,Tabla_4)$residuals) #Residuals of mpg~foreign
+
+#3) Regresion de los residuos de la Reg1 sobre los residuos de la Reg2
+Reg_bs2<-lm(lw_hora_Resid ~ mujer_Resid,Tabla_4)
+stargazer(Reg_bs1,Reg_bs2,type="text",digits=5, omit.stat=c("ser","f","adj.rsq")) 
