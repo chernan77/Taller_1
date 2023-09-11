@@ -363,17 +363,15 @@ cat("Intervalo de confianza Bootstrap para el coeficiente de mujerResidF en boot
 # Establecer una ventana gráfica dividida
 par(mfrow = c(1, 2))  # 1 fila, 2 columnas
 
-
+#jpeg(file = "Hist_1.jpeg", width = 800, height = 600)
 # Dibujar el histograma para bootstrap_modl1
 Hist_1 <- hist(coef_bootstrap_modl1[, 1], main = "Histograma de Coeficientes - bootstrap_modl1", xlab = "Coeficiente")
-#jpeg(file = "Hist_1.jpeg", width = 800, height = 600)
 plot(Hist_1)
 dev.off()  # Finalizar la exportación
-#ruta_exportacion <- "C:/Output R/Taller1/Hist1.jpeg"
+
 
 # Dibujar el histograma para bootstrap_model2
 Hist_2 <- hist(coef_bootstrap_model2[, 1], main = "Histograma de Coeficientes - bootstrap_model2", xlab = "Coeficiente")
-
 
 # Restaurar la configuración gráfica original
 par(mfrow = c(1, 1))  # Restaurar a 1 fila, 1 columna
