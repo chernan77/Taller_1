@@ -1,25 +1,25 @@
 # Taller 1: Big Data y Machine Learning para Econonomia Aplicada
 # Cargamos los paquetes
 
-install.packages("rvest")
-install.packages("xml2")
-install.packages("purrr")
-install.packages("writexl")
-install.packages("tidyverse")
-install.packages("kableExtra")
-install.packages("knitr")
-install.packages("flextable")
-install.packages("officer")
-install.packages("ggplot2")
-install.packages("boot")
-install.packages("lmtest")
-install.packages("car")
-install.packages("dplyr")
-install.packages("xtable")
-install.packages("DT")
-install.packages("jpeg")
-install.packages("openxlsx")
-install.packages("readxl")
+#install.packages("rvest")
+#install.packages("xml2")
+#install.packages("purrr")
+#install.packages("writexl")
+#install.packages("tidyverse")
+#install.packages("kableExtra")
+#install.packages("knitr")
+#install.packages("flextable")
+#install.packages("officer")
+#install.packages("ggplot2")
+#install.packages("boot")
+#install.packages("lmtest")
+#install.packages("car")
+#install.packages("dplyr")
+#install.packages("xtable")
+#install.packages("DT")
+#install.packages("jpeg")
+#install.packages("openxlsx")
+#install.packages("readxl")
 
 library(tidyverse)
 library(rvest)
@@ -383,35 +383,53 @@ par(mfrow = c(1, 1))  # Restaurar a 1 fila, 1 columna
 print(coef_bootstrap_modl1)
 print(coef_bootstrap_model2)
 
+############################################################
+# PERFIL DE INGRESOS POR HOMBRE Y MUJER
 
-###----------------------------------------------------------------------------------------
-###----------------------------------------------------------------------------------------
-###---------------------------------Perfil de Ingreso para Mujer---------------------------
+n <- 1000
 
-Mod4 <- lm(lw_hora ~ Edad + Edad2 + mujer + Edad*mujer + Edad2*mujer, data = Tabla_4)
-stargazer(Mod4, type="text", omit.stat=c("ser","f","adj.rsq"))
+# Vectores para almacenar las edades máximas y los intervalos de confianza
+edadh <- numeric(n)
+edadm <- numeric(n)
+diff <- numeric(n)
 
-Edad_Maxima <- function(data) {
-  Mod4 <- lm(lw_hora ~ Edad + Edad2 + mujer + Edad*mujer + Edad2*mujer, data = Tabla_4)
+for (i in 1:n) {
+  # Genera una muestra bootstrap
+  sample_diff <- sample(1:nrow(Tabla_4), replace = TRUE)
+  datos_diff <- Tabla_4[ sample_diff, ]
+  
+  Mod4 <- lm(lw_hora ~ Edad + Edad2 + mujer + Edad*mujer + Edad2*mujer, data = datos_diff )
   
   coefs1 <- coef(Mod4)
   
   # El coeficiente correspondiente a 'Edad' en la regresión lineal
   d1 <- coefs1['Edad']
   d2 <- coefs1['Edad2']
-  d3<- coefs1['Edad:mujer']
-  d4<- coefs1['Edad2:mujer']
+  d3 <- coefs1['Edad:mujer']
+  d4 <- coefs1['Edad2:mujer']
   
   # Calcular el punto donde la derivada es igual a cero para hombres
-  edad_maxh<-round(- d1/ (2 * d2))
+  edad_maxh <- round(- d1 / (2 * d2))
   
   # Calcular el punto donde la derivada es igual a cero para mujeres
-  edad_maxm <- round((-d1 - d3) / (2 * (d2+ d4)))
+  edad_maxm <- round((-d1 - d3) / (2 * (d2 + d4)))
   
-  return(list(edad_maxima_hombres = edad_maxh, edad_maxima_mujeres =  edad_maxm))
+  # Calcular la diferencia en edades máximas entre hombres y mujeres
+  difmax <- edad_maxh - edad_maxm
+  
+  # Almacena los resultados en los vectores
+  edadh[i] <- edad_maxh
+  edadm[i] <- edad_maxm
+  diff[i] <-difmax
 }
 
 edades_maximas <- Edad_Maxima(Tabla_4)
+
+
+intdiff <- quantile(diff, c(0.025, 0.975))
+
+# Imprime el intervalo de confianza
+print(intdiff)
 
 # Crear un nuevo conjunto de datos con las edades deseadas para hombres y mujeres
 edadh <- data.frame(
@@ -430,6 +448,14 @@ edadm <- data.frame(
 predh <- predict(Mod4, newdata = edadh)
 predm <- predict(Mod4, newdata = edadm)
 
+# Convertir predh y predm en matrices
+predh_matrix <- matrix(predh, ncol = length(edadh))
+predm_matrix <- matrix(predm, ncol = length(edadm))
+
+# Calcular los intervalos de confianza para predh_matrix y predm_matrix
+int_hombres <- apply(predh_matrix, 2, function(x) quantile(x, c(0.025, 0.975)))
+int_mujeres <- apply(predm_matrix, 2, function(x) quantile(x, c(0.025, 0.975)))
+
 # Crear dataframes para las predicciones de hombres y mujeres
 dfpredh <- data.frame(
   Edad = edadh$Edad,
@@ -443,6 +469,7 @@ dfpredm <- data.frame(
   Genero = 'Mujeres'  # Usar comillas simples
 )
 
+
 # Unir los dataframes de hombres y mujeres
 df_predicciones <- rbind(dfpredh , dfpredm )
 
@@ -452,3 +479,234 @@ ggplot(df_predicciones, aes(x = Edad, y = Predicciones, color = Genero)) +
   labs(x = 'Edad', y = 'Perfil de Ingreso') +
   ggtitle('Predicción del Perfil de Ingreso en función de la Edad (Hombres vs. Mujeres)') +
   scale_color_manual(values = c('Hombres' = 'blue', 'Mujeres' = 'red'))
+
+###################################
+n <- 1000
+
+# Vectores para almacenar las predicciones de ingresos
+predicciones_hombres <- matrix(NA, nrow = n, ncol = length(edadh))
+predicciones_mujeres <- matrix(NA, nrow = n, ncol = length(edadm))
+
+for (i in 1:n) {
+  # Genera una muestra bootstrap
+  indices_bootstrap <- sample(1:nrow(Tabla_4), replace = TRUE)
+  datos_bootstrap <- Tabla_4[indices_bootstrap, ]
+  
+  Mod4 <- lm(lw_hora ~ Edad + Edad2 + mujer + Edad*mujer + Edad2*mujer, data = datos_bootstrap)
+  
+  # Realizar predicciones utilizando el modelo para hombres y mujeres
+  predh <- predict(Mod4, newdata = edadh)
+  predm <- predict(Mod4, newdata = edadm)
+  
+  # Almacena las predicciones en las matrices correspondientes
+  predicciones_hombres[i, ] <- predh
+  predicciones_mujeres[i, ] <- predm
+}
+
+# Calcula los intervalos de confianza para las predicciones de ingresos
+intervalos_confianza_hombres <- apply(predicciones_hombres, 2, function(x) quantile(x, c(0.025, 0.975)))
+intervalos_confianza_mujeres <- apply(predicciones_mujeres, 2, function(x) quantile(x, c(0.025, 0.975)))
+
+# Crear el gráfico de dispersión con colores por género y bandas de intervalo de confianza
+ggplot(df_predicciones, aes(x = Edad, y = Predicciones, color = Genero)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = intervalos_confianza_hombres[1,], ymax = intervalos_confianza_hombres[2,], fill = Genero), alpha = 0.2, linetype = "dashed") +
+  geom_ribbon(aes(ymin = intervalos_confianza_mujeres[1,], ymax = intervalos_confianza_mujeres[2,], fill = Genero), alpha = 0.2, linetype = "dashed") +
+  labs(x = 'Edad', y = 'Perfil de Ingreso') +
+  ggtitle('Predicción del Perfil de Ingreso en función de la Edad (Hombres vs. Mujeres)') +
+  scale_color_manual(values = c('Hombres' = 'blue', 'Mujeres' = 'red'))
+
+########################################################
+# Convertir edadh y edadm en data frames
+
+
+n <- 1000
+
+# Vectores para almacenar las edades máximas y las diferencias en edades máximas
+edadh <- numeric(n)
+edadm <- numeric(n)
+diff <- numeric(n)
+
+for (i in 1:n) {
+  # Genera una muestra bootstrap
+  sample_diff <- sample(1:nrow(Tabla_4), replace = TRUE)
+  datos_diff <- Tabla_4[sample_diff, ]
+  
+  Mod4 <- lm(lw_hora ~ Edad + Edad2 + mujer + Edad*mujer + Edad2*mujer, data = datos_diff)
+  coefs1 <- coef(Mod4)
+  
+  # El coeficiente correspondiente a 'Edad' en la regresión lineal
+  d1 <- coefs1['Edad']
+  d2 <- coefs1['Edad2']
+  d3 <- coefs1['Edad:mujer']
+  d4 <- coefs1['Edad2:mujer']
+  
+  # Calcular el punto donde la derivada es igual a cero para hombres
+  edad_maxh <- round(-d1 / (2 * d2))
+  
+  # Calcular el punto donde la derivada es igual a cero para mujeres
+  edad_maxm <- round((-d1 - d3) / (2 * (d2 + d4)))
+  
+  # Calcular la diferencia en edades máximas entre hombres y mujeres
+  difmax <- edad_maxh - edad_maxm
+  
+  # Almacena los resultados en los vectores
+  edadh[i] <- edad_maxh
+  edadm[i] <- edad_maxm
+  diff[i] <- difmax
+}
+
+# Calcula el intervalo de confianza para la diferencia en edades máximas
+nivel_confianza <- 0.95
+quantil_inf <- (1 - nivel_confianza) / 2
+quantil_sup <- 1 - quantil_inf
+
+intervalo_confianza_diferencia <- quantile(diff, c(quantil_inf, quantil_sup))
+
+# Imprime el intervalo de confianza para la diferencia en edades máximas
+print(intervalo_confianza_diferencia)
+
+# Crear un nuevo conjunto de datos con las edades deseadas para hombres y mujeres
+# Crear un nuevo conjunto de datos con las edades deseadas para hombres y mujeres
+edadh <- data.frame(
+  Edad = seq(min(Tabla_4$Edad), max(Tabla_4$Edad), length.out = 1000),
+  Edad2 = seq(min(Tabla_4$Edad), max(Tabla_4$Edad)^2, length.out = 1000),
+  mujer = 0)
+
+edadm <- data.frame(
+  Edad = seq(min(Tabla_4$Edad), max(Tabla_4$Edad),length.out = 1000),
+  Edad2 = seq(min(Tabla_4$Edad), max(Tabla_4$Edad)^2, length.out = 1000),
+  mujer = 1)
+
+# Realizar predicciones utilizando el modelo para hombres y mujeres
+predh <- exp(predict(Mod4, newdata = data.frame(Edad = Edad_f, Edad2 = Edad_f^2, mujer = 0)))
+predm <- exp(predict(Mod4, newdata = data.frame(Edad = Edad_f, Edad2 = Edad_f^2, mujer = 1)))
+
+# Convertir predh y predm en matrices
+
+# Calcula los intervalos de confianza para las predicciones de ingresos de hombres y mujeres
+int_hombres <-predict(Mod4, newdata = data.frame(edadh), interval = "confidence")
+int_mujeres <- predict(Mod4, newdata = data.frame(edadm), interval = "confidence")
+
+# Crea el gráfico de dispersión con colores por género y bandas de intervalo de confianza
+library(ggplot2)
+
+dfpredh <- data.frame(
+  Edad = edadh$Edad,
+  Predicciones = predh,
+  Genero = 'Hombres'
+)
+
+dfpredm <- data.frame(
+  Edad = edadm$Edad,
+  Predicciones = predm,
+  Genero = 'Mujeres'
+)
+
+df_predicciones <- rbind(dfpredh, dfpredm)
+
+ggplot(df_predicciones, aes(x = Edad, y = Predicciones, color = Genero)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = int_hombres[1, ], ymax = int_hombres[2, ], fill = Genero), alpha = 0.2, linetype = "dashed") +
+  geom_ribbon(aes(ymin = int_mujeres[1, ], ymax = int_mujeres[2, ], fill = Genero), alpha = 0.2, linetype = "dashed") +
+  labs(x = 'Edad', y = 'Perfil de Ingreso') +
+  ggtitle('Predicción del Perfil de Ingreso en función de la Edad (Hombres vs. Mujeres)') +
+  scale_color_manual(values = c('Hombres' = 'blue', 'Mujeres' = 'red'))
+
+
+################################ Ejercicio 4.c
+n <- 1000
+
+# Vectores para almacenar las edades máximas y las diferencias en edades máximas
+edadh <- numeric(n)
+edadm <- numeric(n)
+diff <- numeric(n)
+
+for (i in 1:n) {
+  # Genera una muestra bootstrap
+  sample_diff <- sample(1:nrow(Tabla_4), replace = TRUE)
+  datos_diff <- Tabla_4[sample_diff, ]
+  
+  Mod4 <- lm(lw_hora ~ Edad + Edad2 + mujer + Edad*mujer + Edad2*mujer, data = datos_diff)
+  coefs1 <- coef(Mod4)
+  
+  # El coeficiente correspondiente a 'Edad' en la regresión lineal
+  d1 <- coefs1['Edad']
+  d2 <- coefs1['Edad2']
+  d3 <- coefs1['Edad:mujer']
+  d4 <- coefs1['Edad2:mujer']
+  
+  # Calcular el punto donde la derivada es igual a cero para hombres
+  edad_maxh <- round(-d1 / (2 * d2))
+  
+  # Calcular el punto donde la derivada es igual a cero para mujeres
+  edad_maxm <- round((-d1 - d3) / (2 * (d2 + d4)))
+  
+  # Calcular la diferencia en edades máximas entre hombres y mujeres
+  difmax <- edad_maxh - edad_maxm
+  
+  # Almacena los resultados en los vectores
+  edadh[i] <- edad_maxh
+  edadm[i] <- edad_maxm
+  diff[i] <- difmax
+}
+
+# Calcula el intervalo de confianza para la diferencia en edades máximas
+nivel_confianza <- 0.95
+quantil_inf <- (1 - nivel_confianza) / 2
+quantil_sup <- 1 - quantil_inf
+
+intervalo_confianza_diferencia <- quantile(diff, c(quantil_inf, quantil_sup))
+
+# Imprime el intervalo de confianza para la diferencia en edades máximas
+print(intervalo_confianza_diferencia)
+
+# Crear un nuevo conjunto de datos con las edades deseadas para hombres y mujeres
+Edad_f = seq(min(Tabla_4$Edad), max(Tabla_4$Edad), length.out = 1000)
+
+
+# Realizar predicciones utilizando el modelo para hombres y mujeres
+predh <- (predict(Mod4, newdata = data.frame(Edad = Edad_f, Edad2 = Edad_f^2, mujer = 0)))
+predm <- (predict(Mod4, newdata = data.frame(Edad = Edad_f, Edad2 = Edad_f^2, mujer = 1)))
+
+# Convertir predh y predm en matrices
+
+# Calcula los intervalos de confianza para las predicciones de ingresos de hombres y mujeres
+int_hombres <-(predict(Mod4, newdata = data.frame(Edad = Edad_f, Edad2 = Edad_f^2, mujer = 0), interval = "confidence"))
+int_mujeres <- (predict(Mod4, newdata = data.frame(Edad = Edad_f, Edad2 = Edad_f^2, mujer = 1), interval = "confidence"))
+
+# Crea el gráfico de dispersión con colores por género y bandas de intervalo de confianza
+edadh <- data.frame(
+  Edad = seq(min(Tabla_4$Edad), max(Tabla_4$Edad), length.out = 1000),
+  Edad2 = seq(min(Tabla_4$Edad), max(Tabla_4$Edad)^2, length.out = 1000),
+  mujer = 0)
+
+edadm <- data.frame(
+  Edad = seq(min(Tabla_4$Edad), max(Tabla_4$Edad),length.out = 1000),
+  Edad2 = seq(min(Tabla_4$Edad), max(Tabla_4$Edad)^2, length.out = 1000),
+  mujer = 1)
+
+dfpredh <- data.frame(
+  Edad = edadh$Edad,
+  Prediccionesh = predh,
+  Genero = 'Hombres'
+)
+
+dfpredm <- data.frame(
+  Edad = edadm$Edad,
+  Prediccionesm = predm,
+  Genero = 'Mujeres'
+)
+
+ggplot(dfpredh, aes(x = Edad, y = Prediccionesh)) +
+  geom_line(color = 'blue') +
+  geom_ribbon(aes(ymin = int_hombres[, "lwr"], ymax = int_hombres[, "upr"]), fill = 'blue', alpha = 0.2) +
+  labs(x = 'Edad', y = 'Perfil de Ingreso', title = 'Predicción del Perfil de Ingreso para Hombres') +
+  theme_minimal()
+
+ggplot(dfpredm, aes(x = Edad, y = Prediccionesm)) +
+  geom_line(color = 'red') +
+  geom_ribbon(aes(ymin = int_mujeres[, "lwr"], ymax = int_mujeres[, "upr"]), fill = 'red', alpha = 0.2) +
+  labs(x = 'Edad', y = 'Perfil de Ingreso', title = 'Predicción del Perfil de Ingreso para Mujeres') +
+  theme_minimal()
+
