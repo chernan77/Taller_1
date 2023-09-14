@@ -269,6 +269,21 @@ Sig_Economica <- as.data.frame(Sig_Economica)
 ######-------------------------REGRESION 2 ------------------------##########
 ##--------------------Bootstrap------------------------------###
 
+#Ajusta el modelo de regresión no lineal:
+Mod2 <- lm(lw_hora ~ Edad + Edad2, data = Tabla_4)
+Mod2_stargazer <- stargazer(Mod2, type="text", omit.stat=c("ser","f","adj.rsq"))
+Mod2_stargazer <- as.data.frame(Mod2_stargazer)
+#Reg <- "C:/Output R/Taller_1/Taller_1/Mod2_stargazer.xlsx"
+#write_xlsx(Mod2_stargazer, path = Reg )
+
+# Significancia Economica parametros
+Coefs <- Mod2$coefficients
+SE1 <- (exp(Coefs)-1)*100
+Sig_Economica1 <- round(SE1/Media_w_hora*100, digits = 3)
+Sig_Economica1 <- as.data.frame(Sig_Economica1)
+#T2 <- "C:/Output R/Taller_1/Taller_1/T2_Se.xlsx"
+#write_xlsx(Sig_Economica1, path = T2)
+
 library(boot)
 Edad_Mod2 <-function(data,index){
   
@@ -285,20 +300,6 @@ Edad_Mod2 <-function(data,index){
   return(Edad_Maxima)
 }
 
-#Ajusta el modelo de regresión no lineal:
-Mod2 <- lm(lw_hora ~ Edad + Edad2, data = Tabla_4)
-Mod2_stargazer <- stargazer(Mod2, type="text", omit.stat=c("ser","f","adj.rsq"))
-Mod2_stargazer <- as.data.frame(Mod2_stargazer)
-#Reg <- "C:/Output R/Taller_1/Taller_1/Mod2_stargazer.xlsx"
-#write_xlsx(Mod2_stargazer, path = Reg )
-
-# Significancia Economica parametros
-Coefs <- Mod2$coefficients
-SE1 <- (exp(Coefs)-1)*100
-Sig_Economica1 <- round(SE1/Media_w_hora*100, digits = 3)
-Sig_Economica1 <- as.data.frame(Sig_Economica1)
-#T2 <- "C:/Output R/Taller_1/Taller_1/T2_Se.xlsx"
-#write_xlsx(Sig_Economica1, path = T2)
 
 set.seed(123)
 Res_Edad <- boot(data=Tabla_4, Edad_Mod2,R=1000)
