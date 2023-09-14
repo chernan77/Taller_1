@@ -323,13 +323,13 @@ Interv_Conf <- predict(Mod2, newdata = data.frame(Edad = Edad_seq, Edad2 = Edad_
 lwr <- exp(Interv_Conf[, "lwr"])
 upr <- exp(Interv_Conf[, "upr"])
 
-#Link_C <- "C:/Output R/Taller_1/Taller_1/graph1.jpeg"
-#jpeg(file = Link_C, width = 900, height = 600)
+Link_C <- "C:/Output R/Taller_1/Taller_1/graph1.jpeg"
+jpeg(file = Link_C, width = 900, height = 600)
 plot(Edad_seq, Perfil_Ingreso, type = "l", xlab = "Edad", ylab = "Salario por Hora Estimado", main = "Perfil Estimado de Edad-Ingresos")  # Vuelve a crear el gráfico dentro de png()
 lines(Edad_seq, lwr, col = "red", lty = 2)
 lines(Edad_seq, upr, col = "red", lty = 2)
 Edad_Max <- Edad_seq[which.max(Perfil_Ingreso)]
-text(Edad_Max, max(Perfil_Ingreso), labels = "Edad Maxima", pos = 1, col = "blue", cex = 1.0, srt = 0)
+text(Edad_Max, max(Perfil_Ingreso), labels = "Max", pos = 1, col = "blue", cex = 1.5, srt = 0)
 dev.off()  
 
 ###### --------------------SEGUNDO PARTE---------------------------############
@@ -340,7 +340,10 @@ dev.off()
 ### Crear la variable mujer
 Tabla_4$mujer <- ifelse(Tabla_4$Sexo == 0, 1, 0)
 brecha_salarial <- lm(lw_hora ~ mujer, data = Tabla_4)
-stargazer(brecha_salarial, type="text", digits=3, omit.stat=c("ser","f","adj.rsq"))
+Modm_stargazer <- stargazer(brecha_salarial, type="text", digits=3, omit.stat=c("ser","f","adj.rsq"))
+Modm_stargazer <- as.data.frame(Modm_stargazer)
+Regm <- "C:/Output R/Taller_1/Taller_1/Modm_stargazer.xlsx"
+write_xlsx(Modm_stargazer, path = Regm)
 
 # Regresion log(w_hora) sobre las demas variables
 Reg_bs1<-lm(lw_hora ~ mujer + Edad +Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas, data =Tabla_4)
