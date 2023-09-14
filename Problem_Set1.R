@@ -21,12 +21,8 @@
 #install.packages("jpeg")
 install.packages("openxlsx")
 install.packages("readxl")
-<<<<<<< Updated upstream
 install.packages("cowplot")
 install.packages("modeest")
-=======
-install.packages("rmarkdown")
->>>>>>> Stashed changes
 
 
 library(modeest)
@@ -49,12 +45,7 @@ require(pacman)
 library(stargazer)
 library(readxl)
 library(openxlsx)
-<<<<<<< Updated upstream
 library(cowplot)
-=======
-library(rmarkdown)
-
->>>>>>> Stashed changes
 p_load(tidyverse, skimr, stargazer, tidymodels, broom,knitr,kableExtra)
 
 #Importar data de los demas Chunk
@@ -455,11 +446,7 @@ for (i in 1:n) {
   d4 <- coefs2['Edad2:mujer']
   
   # Calcular el punto donde la derivada es igual a cero para hombres
-<<<<<<< Updated upstream
   edad_maxh <- round(-d1 / (2 * d2))
-=======
-  edad_maxh<-round(-d1/ (2 * d2))
->>>>>>> Stashed changes
   
   # Calcular el punto donde la derivada es igual a cero para mujeres
   edad_maxm <- round((-d1 - d3) / (2 * (d2 + d4)))
@@ -500,7 +487,6 @@ intervalo_confianza_diferencia <- quantile(diff, c(quantil_inf, quantil_sup))
 print(intervalo_confianza_diferencia)
 
 # Crear un nuevo conjunto de datos con las edades deseadas para hombres y mujeres
-<<<<<<< Updated upstream
 Edad_f = seq(min(Tabla_4$Edad), max(Tabla_4$Edad), length.out = 1000)
 
 # Realizar predicciones utilizando el modelo para hombres y mujeres
@@ -565,88 +551,3 @@ plot_grid(graph_h, graph_m, ncol=2)
 
 
 
-=======
-
-Edad_f = seq(min(Tabla_4$Edad), max(Tabla_4$Edad), length.out = 1000)
-#Edad_f <- as.data.frame(Edad_f)
-#Edad_f_1 <- "C:/Output R/Taller_1/Taller_1/Edad_f.xlsx"
-#write.xlsx(Edad_f, Edad_f_1)
-  
-# Perfil estimado de ingresos usando los coeficientes
-predh <- exp(predict(Mod4, newdata = data.frame(Edad = Edad_f, Edad2 = Edad_f^2, mujer = 0)))
-#predh <- as.data.frame(predh)
-#predh_1 <- "C:/Output R/Taller_1/Taller_1/predh.xlsx"
-#write.xlsx(predh, predh_1)
-
-predm <- exp(predict(Mod4, newdata = data.frame(Edad = Edad_f, Edad2 = Edad_f^2, mujer = 1)))
-
-# Calcular los intervalos de confianza para el perfil de ingresos
-Interv_Conf <- exp(predict(Mod4, newdata = data.frame(Edad = Edad_f, Edad2 = Edad_f^2, mujer = 0), interval = "confidence"))
-#Interv_Conf <- as.data.frame(Interv_Conf)
-#IC <- "C:/Output R/Taller_1/Taller_1/Intev.xlsx"
-#write.xlsx(Interv_Conf, IC)
-
-# Extraer los límites inferior (lwr) y superior (upr) de los intervalos de confianza
-lwr <- exp(Interv_Conf[, "lwr"])
-upr <- exp(Interv_Conf[, "upr"])
-
-#library(jpeg)
-#jpeg(file = "C:/Output R/Taller1/Graph1.jpeg", width = 900, height = 600)
-# Crear el gráfico
-
-# Datos de ejemplo
-# Ajustar un modelo de regresión lineal
-#modelo <- lm(y ~ x)
-
-# Valores de x para hacer predicciones
-#nuevo_x <- seq(min(x), max(x), length.out = 100)
-
-# Calcular las predicciones y el intervalo de confianza
-#predicciones <- predict(modelo, newdata = data.frame(x = nuevo_x), interval = "confidence", level = 0.95)
-
-#library(jpeg)
-#jpeg(file = "C:/Output R/Taller1/Graph1.jpeg", width = 900, height = 600)
-plot(Edad_f, predh, type = "n", xlab = "Eje X", ylab = "Eje Y", main = "Predicción con Intervalo de Confianza")
-
-# Agregar la línea de predicción
-lines(Edad_f, Interv_Conf[, "fit"], col = "blue")
-
-# Agregar el intervalo de confianza
-polygon(c(Edad_f, rev(Edad_f)), c(Interv_Conf[, "lwr"], rev(Interv_Conf[, "upr"])), col = "blue", alpha = 0.3)
-
-# Agregar puntos de datos originales
-points(Edad_f, predh, pch = 16, col = "red")
-
-# Leyenda
-legend("topright", legend = c("Datos Originales", "Predicción", "Intervalo de Confianza"), col = c("red", "blue", "blue"), pch = c(16, NA, NA))
-
-
-
-
-
-
-
-
-
-
-
-
-plot(Edad_f, predh, type = "l", xlab = "Edad", ylab = "Salario por Hora Estimado", main = "Perfil Estimado de Edad-Ingresos")
-lines(Edad_f, lwr, col = "red", lty = 2)
-lines(Edad_f, upr, col = "red", lty = 2)
-Edad_Max <- Edad_f[which.max(predh)]
-text(Edad_Max, max(predh), "Edad Maxima Mujeres", pos = 3, col = "blue")
-dev.off() 
-
-# Unir los dataframes de hombres y mujeres
-df_predicciones <- rbind(predh , predm )
-
-# Crear el gráfico de dispersión con colores por género
-ggplot(df_predicciones, aes(x = Edad, y = Predicciones, color = Genero)) +
-  geom_line() +
-  labs(x = 'Edad', y = 'Perfil de Ingreso') +
-  ggtitle('Predicción del Perfil de Ingreso en función de la Edad (Hombres vs. Mujeres)') +
-  scale_color_manual(values = c('Hombres' = 'blue', 'Mujeres' = 'red'))
-
-
->>>>>>> Stashed changes
