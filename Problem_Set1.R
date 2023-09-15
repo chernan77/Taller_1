@@ -76,8 +76,8 @@ Tabla_Total <- bind_rows(dataframes)
 
 Tabla_2 <- Tabla_Total %>% filter(age > 18) #Excluir datos de individuos menores a 18 años
 
-Tabla_2 <- Tabla_2 %>% filter(dsi == 0) # Excluir los desempleados
-Tabla_2 <- Tabla_2 %>% filter(pea == 1) # Excluir la población económicamente inactiva
+#Tabla_2 <- Tabla_2 %>% filter(dsi == 0) # Excluir los desempleados
+#Tabla_2 <- Tabla_2 %>% filter(pea == 1) # Excluir la población económicamente inactiva
 
 Tabla_2 <- Tabla_2 %>% rename(w_hora=y_salary_m_hu) # Renombrar la variable Dependiente
 
@@ -353,13 +353,13 @@ Reg_bs1<-lm(lw_hora ~ mujer + Edad +Edad2 + Educ + exp + exp2 + Tamaño_empresa 
 stargazer(Reg_bs1,type="text",digits=3, omit.stat=c("ser","f","adj.rsq"))
 
 #1) Regresion var=mujer sobre las demas variables (Reg1)
-Tabla_4 <-Tabla_4 %>% mutate(mujer_Resid=lm(mujer~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas,Tabla_4)$residuals)
+Tabla_4 <-Tabla_4 %>% mutate(Mujer_Resid=lm(mujer~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas,Tabla_4)$residuals)
 
 #2) Regresión log(w_hora) sobre las demas variables excepto mujer (Reg2)
 Tabla_4 <-Tabla_4 %>% mutate(lw_hora_Resid=lm(lw_hora~ Edad + Edad2+ Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas,Tabla_4)$residuals) #Residuals of mpg~foreign
 
 #3) Regresión de los residuos de la Reg1 sobre los residuos de la Reg2
-Reg_bs2<-lm(lw_hora_Resid ~ mujer_Resid,Tabla_4)
+Reg_bs2<-lm(lw_hora_Resid ~ Mujer_Resid,Tabla_4)
 
 Mod3_stargazer <- stargazer(Reg_bs1,Reg_bs2,type="text",digits=3, omit.stat=c("ser","f","adj.rsq")) 
 Mod3_stargazer <- as.data.frame(Mod3_stargazer)
@@ -387,19 +387,19 @@ boots_fwl <- for (i in 1:B) {
   
   # Ajustar brecha_salarial2 en la muestra bootstrap
   sample_data<- sample_data %>%
-    mutate(mujerResid  = lm(mujer ~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas, data = sample_data)$residuals)
+    mutate(Mujer_Resid  = lm(mujer ~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas, data = sample_data)$residuals)
   
   sample_data<- sample_data %>%
-    mutate(lw_horaResid = lm(lw_hora ~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas, data = sample_data)$residuals)
+    mutate(lw_hora_Resid = lm(lw_hora ~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas, data = sample_data)$residuals)
   
-  bootstrap_mod2 <- lm(lw_horaResid ~ mujerResid, data = sample_data)
+  bootstrap_mod2 <- lm(lw_hora_Resid ~ Mujer_Resid, data = sample_data)
   
   # Almacenar los coeficientes estimados y errores estC!ndar
   coef_bootstrap_mod1[i, 1] <- coef(bootstrap_mod1)["mujer"]
   coef_bootstrap_mod1[i, 2] <- summary(bootstrap_mod1)$coefficients["mujer", "Std. Error"]
   
-  coef_bootstrap_mod2[i, 1] <- coef(bootstrap_mod2)["mujerResid"]
-  coef_bootstrap_mod2[i, 2] <- summary(bootstrap_mod2)$coefficients["mujerResid", "Std. Error"]
+  coef_bootstrap_mod2[i, 1] <- coef(bootstrap_mod2)["Mujer_Resid"]
+  coef_bootstrap_mod2[i, 2] <- summary(bootstrap_mod2)$coefficients["Mujer_Resid", "Std. Error"]
   
 }
 
@@ -407,6 +407,17 @@ Mod4_stargazer <- stargazer(bootstrap_mod1,bootstrap_mod2,type="text",digits=3, 
 Mod4_stargazer <- as.data.frame(Mod4_stargazer)
 #Reg4 <- "C:/Output R/Taller_1/Taller_1/Mod4_stargazer.xlsx"
 #write_xlsx(Mod4_stargazer, path = Reg4)
+
+#Comparativo de regresiones con y sin Bootstrap:
+
+# Define títulos para cada regresión
+
+Mod_Comparativos <- stargazer(Reg_bs1,Reg_bs2, bootstrap_mod1, bootstrap_mod2, type="text",digits=3, 
+                              omit.stat=c("ser","f","adj.rsq"),
+                              notes = c("Notas: (1) y (2) con muestra única y (3) y (4) con Bootstrap"))
+Mod_Comparativos <- as.data.frame(Mod_Comparativos)
+Reg_Comp <- "C:/Output R/Taller_1/Taller_1/Mod_Comparativos.xlsx"
+write_xlsx(Mod_Comparativos, path = Reg_Comp)
 
 
 # Calcular los intervalos de confianza Bootstrap para los coeficientes
@@ -436,11 +447,10 @@ edadh <- numeric(n)
 edadm <- numeric(n)
 diff <- numeric(n)
 
-
+set.seed(123)
 for (i in 1:n) {
   # Genera una muestra bootstrap
-  set.seed(123)
-  sample_diff <- sample(1:nrow(Tabla_4), replace = TRUE)
+    sample_diff <- sample(1:nrow(Tabla_4), replace = TRUE)
   datos_diff <- Tabla_4[sample_diff, ]
   
   Mod5 <- lm(lw_hora ~ Edad + Edad2 + mujer + Edad*mujer + Edad2*mujer, data = datos_diff)
@@ -468,6 +478,13 @@ for (i in 1:n) {
   
 }
 
+# Calcula el intervalo de confianza para la diferencia en edades mC!ximas
+nivel_confianza <- 0.95
+quantil_inf <- (1 - nivel_confianza) / 2
+quantil_sup <- 1 - quantil_inf
+
+intervalo_confianza_diferencia <- quantile(diff, c(quantil_inf, quantil_sup))
+
 #Regresión 5
 Mod5_stargazer <- stargazer(Mod5, type="text", omit.stat=c("ser","f","adj.rsq"),  digits = 3)
 Mod5_stargazer <- as.data.frame(Mod5_stargazer)
@@ -481,17 +498,6 @@ Sig_Economica2 <- round(SE2/Media_w_hora*100, digits = 3)
 Sig_Economica2 <- as.data.frame(Sig_Economica2)
 #T3 <- "C:/Output R/Taller_1/Taller_1/T3_Se.xlsx"
 #write_xlsx(Sig_Economica2, path = T3 )
-
-
-# Calcula el intervalo de confianza para la diferencia en edades mC!ximas
-nivel_confianza <- 0.95
-quantil_inf <- (1 - nivel_confianza) / 2
-quantil_sup <- 1 - quantil_inf
-
-intervalo_confianza_diferencia <- quantile(diff, c(quantil_inf, quantil_sup))
-
-# Imprime el intervalo de confianza para la diferencia en edades máximas
-print(intervalo_confianza_diferencia)
 
 # Crear un nuevo conjunto de datos con las edades deseadas para hombres y mujeres
 Edad_f = seq(min(Tabla_4$Edad), max(Tabla_4$Edad), length.out = 1000)
@@ -553,6 +559,8 @@ graph_m <- ggplot(dfpredm, aes(x = Edad, y = Prediccionesm)) +
 graph_m
 
 #Gráfica Conjunta Hombre-Mujer
+Link_C <- "C:/Output R/Taller_1/Taller_1/views/graph2.jpeg"
+jpeg(file = Link_C, width = 1200, height = 600)
 plot_grid(graph_h, graph_m, ncol=2)
 
 
