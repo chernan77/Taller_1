@@ -76,11 +76,7 @@ Tabla_Total <- bind_rows(dataframes)
 
 Tabla_2 <- Tabla_Total %>% filter(age > 18) #Excluir datos de individuos menores a 18 años
 
-Tabla_2 <- Tabla_2 %>% filter(dsi == 0) # Excluir los desempleados
-Tabla_2 <- Tabla_2 %>% filter(pea == 1) # Excluir la poblaci??n econ??micamente inactiva
-
-
-Tabla_2 <- Tabla_2 %>% rename(w_hora=y_salary_m_hu) # Renombrar la variable Dependiente
+Tabla_2 <- Tabla_2 %>% rename(w_hora=y_salary_m_hu) # Renormbrar la variable Dependiente
 
 Porc_NA <- mean(is.na(Tabla_2$w_hora))* 100 # determinar que % de NA tiene w_hora
 
