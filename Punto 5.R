@@ -44,6 +44,16 @@ p_load(tidyverse, skimr, stargazer, tidymodels, broom,knitr,kableExtra)
 path_base<-"Base_final.xlsx"
 Tabla_4 <- read_excel(path_base, sheet = "Sheet 1")
 
+#Usar la tabla con filtros: Tabla_4
+Tabla_4$lw_hora <- log(Tabla_4$w_hora)
+
+Tabla_4<- Tabla_4 %>%
+  mutate(across(c(Educ, depto, Estrato), as.factor)) %>%
+  mutate(Horas_trabajadas2=Horas_trabajadas^2) %>%
+  mutate(Edad2=Edad^2) 
+
+Tabla_4$Sector <- ifelse(Tabla_4$formal == 1 & Tabla_4$informal == 0, 1, 0)
+
 # a. Split Sample:--------------------------------------------------------------
 set.seed(123)
 sample_split <- initial_split(Tabla_4, prop = .7)
@@ -51,6 +61,7 @@ sample_split <- initial_split(Tabla_4, prop = .7)
 # Create test and train data frames 
 train <- training(sample_split)
 test  <- testing(sample_split)
+
 
 # b. Report and compare the predictive performance in terms of the RMSE:--------
 
