@@ -222,8 +222,8 @@ Tabla_ingresos_edad <- Tabla_4 %>%
             Nivel_Educ = round(mean(Educ)),
             Estrat = round(mlv(Estrato)),
             Tam_empresa = round(mlv(Tamaño_empresa)),
-            CantidadPersonas = n())
-colnames(Tabla_ingresos_edad) <- c("Rango de Edad", "Salario por hora", "Salario Mensual","Ingreso Total","Nivel Educativo Medio","Estrato","Tamaño Empresas", "Numero de Individuos")
+            CantidadPersonas = round((sum(Sexo) / sum(Tabla_4$Sexo)) * 100,digits = 1))
+colnames(Tabla_ingresos_edad) <- c("Rango de Edad", "Salario por hora", "Salario Mensual","Ingreso Total","Nivel Educativo Medio","Estrato","Tamaño Empresas", "% de Individuos")
 Tabla_ingresos_edad
 
 Tabla_ingresos_edad <- Tabla_ingresos_edad %>%
@@ -252,13 +252,16 @@ Tabla_Sexo <- Tabla_5 %>%
   summarize(Ingreso_Promedio = mean(w_hora),
             Salario_Promedio = mean(y_salary_m),
             Ingreso_Laboral = mean(y_ingLab_m_ha),
-            Ingreso_Total = mean(y_total_m))
-colnames(Tabla_Sexo) <- c("Sexo", "Salario Real por Hora","Salario Nominal Mensual","Ingreso Laboral","Ingreso Total" )
+            Ingreso_Total = mean(y_total_m),
+            Individuos = n())
+colnames(Tabla_Sexo) <- c("Sexo", "Salario Real por Hora","Salario Nominal Mensual","Ingreso Laboral","Ingreso Total" ,"Cantidad")
 Tabla_Sexo <- as.data.frame(Tabla_Sexo)
-#Tabla_S <- "C:/Output R/Taller_1/Taller_1/Tabla_S1.xlsx"
-#write_xlsx(Tabla_Sexo, path = Tabla_S)
+Tabla_S <- "C:/Output R/Taller_1/Taller_1/Tabla_S1.xlsx"
+write_xlsx(Tabla_Sexo, path = Tabla_S)
 
 # grafica del Log(w_hora), respecto a la Educación
+Link_C1 <- "C:/Output R/Taller_1/Taller_1/views/graph1.jpeg"
+jpeg(file = Link_C1, width = 800, height = 300)
 Graph_we <- ggplot(Tabla_4, aes(x = Nivel_Educativo, y = lw_hora)) +
   geom_point(alpha = 0.5, color = "red") +
   labs(x = "Educación", y = "Salario por Hora", title = "Grafica 1: Colombia 2018:Relación entre Salario y la Educación") +
@@ -269,6 +272,7 @@ Graph_we <- ggplot(Tabla_4, aes(x = Nivel_Educativo, y = lw_hora)) +
         plot.background = element_rect(fill = "transparent", color = NA),
         plot.title = element_text(hjust = 0.5))
 Graph_we
+dev.off() 
 
 ### Regresión 1
 Mod <- lm.fit <- lm(lw_hora ~ Educ + exp + exp2 + Sexo + Edad + Horas_trabajadas + Tamaño_empresa + Sector + Estrato, data = Tabla_4)
@@ -343,9 +347,9 @@ Interv_Conf <- predict(Mod2, newdata = data.frame(Edad = Edad_seq, Edad2 = Edad_
 lwr <- exp(Interv_Conf[, "lwr"])
 upr <- exp(Interv_Conf[, "upr"])
 
-Link_C <- "C:/Output R/Taller_1/Taller_1/graph1.jpeg"
+Link_C <- "C:/Output R/Taller_1/Taller_1/views/graph2.jpeg"
 jpeg(file = Link_C, width = 900, height = 600)
-plot(Edad_seq, Perfil_Ingreso, type = "l", xlab = "Edad", ylab = "Salario por Hora Estimado", main = "Perfil Estimado de Edad-Ingresos")  # Vuelve a crear el grC!fico dentro de png()
+plot(Edad_seq, Perfil_Ingreso, type = "l", xlab = "Edad", ylab = "Salario por Hora Estimado", main = "Grafica 2: Perfil Estimado de Edad-Ingresos")  # Vuelve a crear el grC!fico dentro de png()
 lines(Edad_seq, lwr, col = "red", lty = 2)
 lines(Edad_seq, upr, col = "red", lty = 2)
 Edad_Max <- Edad_seq[which.max(Perfil_Ingreso)]
@@ -368,14 +372,14 @@ Regm <- "C:/Output R/Taller_1/Taller_1/Modm_stargazer.xlsx"
 write_xlsx(Modm_stargazer, path = Regm)
 
 # Regresión log(w_hora) sobre las demas variables
-Reg_bs1<-lm(lw_hora ~ mujer + Edad +Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas, data =Tabla_4)
+Reg_bs1<-lm(lw_hora ~ mujer + Edad +Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas + Sector + Estrato, data =Tabla_4)
 stargazer(Reg_bs1,type="text",digits=3, omit.stat=c("ser","f","adj.rsq"))
 
 #1) Regresion var=mujer sobre las demas variables (Reg1)
-Tabla_4 <-Tabla_4 %>% mutate(Mujer_Resid=lm(mujer~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas,Tabla_4)$residuals)
+Tabla_4 <-Tabla_4 %>% mutate(Mujer_Resid=lm(mujer~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas + Sector + Estrato,Tabla_4)$residuals)
 
 #2) Regresión log(w_hora) sobre las demas variables excepto mujer (Reg2)
-Tabla_4 <-Tabla_4 %>% mutate(lw_hora_Resid=lm(lw_hora~ Edad + Edad2+ Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas,Tabla_4)$residuals) #Residuals of mpg~foreign
+Tabla_4 <-Tabla_4 %>% mutate(lw_hora_Resid=lm(lw_hora~ Edad + Edad2+ Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas + Sector + Estrato,Tabla_4)$residuals) #Residuals of mpg~foreign
 
 #3) Regresión de los residuos de la Reg1 sobre los residuos de la Reg2
 Reg_bs2<-lm(lw_hora_Resid ~ Mujer_Resid,Tabla_4)
@@ -384,6 +388,21 @@ Mod3_stargazer <- stargazer(Reg_bs1,Reg_bs2,type="text",digits=3, omit.stat=c("s
 Mod3_stargazer <- as.data.frame(Mod3_stargazer)
 Reg3 <- "C:/Output R/Taller_1/Taller_1/Mod3_stargazer.xlsx"
 write_xlsx(Mod3_stargazer, path = Reg3)
+
+# Significancia Económica parámetros
+Coefs2 <- Reg_bs1$coefficients
+SE2 <- (exp(Coefs2)-1)*100
+Sig_Economica2 <- round(SE2/Media_w_hora*100, digits = 3)
+Sig_Economica2 <- as.data.frame(Sig_Economica2)
+T3 <- "C:/Output R/Taller_1/Taller_1/T3_Se.xlsx"
+write_xlsx(Sig_Economica2, path = T3)
+
+# Significancia Económica parámetros
+Coefs3 <- Reg_bs2$coefficients
+SE3 <- (exp(Coefs3)-1)*100
+Sig_Economica3 <- round(SE3/Media_w_hora*100, digits = 3)
+Sig_Economica3 <- as.data.frame(Sig_Economica3)
+
 
 
 ####-------------------------Bootstrap---------------------------------------#########
@@ -402,14 +421,14 @@ boots_fwl <- for (i in 1:B) {
   sample_data <- Tabla_4[sample_indices, ]
   
   # Ajustar brecha_salarial1 en la muestra bootstrap
-  bootstrap_mod1 <- lm(lw_hora ~ mujer + Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas, data = sample_data)
+  bootstrap_mod1 <- lm(lw_hora ~ mujer + Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas + Sector + Estrato, data = sample_data)
   
   # Ajustar brecha_salarial2 en la muestra bootstrap
   sample_data<- sample_data %>%
-    mutate(Mujer_Resid  = lm(mujer ~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas, data = sample_data)$residuals)
+    mutate(Mujer_Resid  = lm(mujer ~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas + Sector + Estrato, data = sample_data)$residuals)
   
   sample_data<- sample_data %>%
-    mutate(lw_hora_Resid = lm(lw_hora ~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas, data = sample_data)$residuals)
+    mutate(lw_hora_Resid = lm(lw_hora ~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas + Sector + Estrato, data = sample_data)$residuals)
   
   bootstrap_mod2 <- lm(lw_hora_Resid ~ Mujer_Resid, data = sample_data)
   
@@ -428,7 +447,6 @@ Reg4 <- "C:/Output R/Taller_1/Taller_1/Mod4_stargazer.xlsx"
 write_xlsx(Mod4_stargazer, path = Reg4)
 
 #Comparativo de regresiones con y sin Bootstrap:
-
 Mod_Comparativos <- stargazer(Reg_bs1,Reg_bs2, bootstrap_mod1, bootstrap_mod2, type="text",digits=3, 
                               omit.stat=c("ser","f","adj.rsq"),
                               notes = c("Notas: (1) y (2) con muestra única y (3) y (4) con Bootstrap"))
@@ -507,12 +525,12 @@ Reg5 <- "C:/Output R/Taller_1/Taller_1/Mod5_stargazer.xlsx"
 write_xlsx(Mod5_stargazer, path = Reg5)
 
 # Significancia Económica parámetros
-Coefs2 <- Mod5$coefficients
-SE2 <- (exp(Coefs2)-1)*100
-Sig_Economica2 <- round(SE2/Media_w_hora*100, digits = 3)
-Sig_Economica2 <- as.data.frame(Sig_Economica2)
-T3 <- "C:/Output R/Taller_1/Taller_1/T3_Se.xlsx"
-write_xlsx(Sig_Economica2, path = T3 )
+Coefs4 <- Mod5$coefficients
+SE3 <- (exp(Coefs4)-1)*100
+Sig_Economica3 <- round(SE2/Media_w_hora*100, digits = 3)
+Sig_Economica3 <- as.data.frame(Sig_Economica3)
+T4 <- "C:/Output R/Taller_1/Taller_1/T4_Se.xlsx"
+write_xlsx(Sig_Economica3, path = T4 )
 
 # Conjunto de datos de edades para hombres y mujeres
 Edad_f = seq(min(Tabla_4$Edad), max(Tabla_4$Edad), length.out = 7378)
@@ -574,7 +592,7 @@ graph_h <- ggplot(dfpredh, aes(x = Edad, y = Prediccionesh)) +
 graph_h
 
 #Gráfica Conjunta Hombre-Mujer
-Link_C1 <- "C:/Output R/Taller_1/Taller_1/views/graph2.jpeg"
+Link_C1 <- "C:/Output R/Taller_1/Taller_1/views/graph4.jpeg"
 jpeg(file = Link_C1, width = 1200, height = 600)
 plot_grid(graph_h,graph_m, ncol=2)
 dev.off()  
