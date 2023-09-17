@@ -101,7 +101,7 @@ fit_model <- function(x, df=train) {
   fit_model
 }
 
-list_workflows <- lapply(modelos, function(x){fit_model(x, train)})
+workflows <- lapply(modelos, function(x){fit_model(x, train)})
 
 # Create loop to test
 predict_from_workflow <- function(w, df_test=test) {
@@ -116,8 +116,8 @@ rmse_from_predict <- function(pred) {
   test_rmse$.estimate
 }
 
-list_predictions <- lapply(list_workflows, function (w){predict_from_workflow(w, test)})
-list_rmse <- lapply(list_predictions, function (pred){rmse_from_predict(pred)})
+predictions <- lapply(workflows, function (w){predict_from_workflow(w, test)})
 
+rmse <- lapply(list_predictions, function (pred){rmse_from_predict(pred)})
 
 rmse_df <- data.frame(list_rmse)
