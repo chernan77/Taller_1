@@ -101,7 +101,7 @@ model7_4 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + E
   step_dummy(all_factor_predictors())
 
 #List models
-modelos<-list(model1, model2, model3, model4, model5, model6, model7, model8, model9, model10, model10_2, model10_3, model10_4, model7_2, model7_3, model7_4,)
+modelos<-list(model1, model2, model3, model4, model5, model6, model7, model8, model9, model10, model10_2, model10_3, model10_4, model7_2, model7_3, model7_4)
 
 # Create loop to fit with workflows
 
@@ -137,4 +137,17 @@ predictions <- lapply(workflows, function (w){predict_from_workflow(w, test)})
 
 rmse <- lapply(list_predictions, function (pred){rmse_from_predict(pred)})
 
-rmse_df <- data.frame(list_rmse)
+rmse_df <- data.frame(list_rmse) 
+rmse_df <- data.frame(
+  'Workflow' = c('model1', 'model2', 'model3', 'model4', 'model5', 'model6', 'model7', 'model8', 'model9','model10', 'model10_2', 'model10_3','model10_4', 'model7_2', 'model7_3', 'model7_4'),
+  'RMSE' = c('model1', 'model2', 'model3', 'model4', 'model5', 'model6', 'model7', 'model8', 'model9','model10', 'model10_2', 'model10_3','model10_4', 'model7_2', 'model7_3', 'model7_4')
+)
+
+
+# Elegir los modelos para menor RMSE:
+workflows_loocv <- rmse_df$Workflow[order(rmse_df$RMSE)[1:2]]
+
+## D. LOOCV:
+
+loocv_model1 <- vector("numeric", length = nrow(Tabla_4))
+
