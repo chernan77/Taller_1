@@ -93,7 +93,7 @@ fit_model <- function(x, df=train) {
   
   work_flow <- workflow() %>%  #Creación de los workflows
     add_recipe(x) %>% 
-    add_model(linear_model)
+    add_model(linear_model) #Add recipes to tidymodels
   
   fit_model <- work_flow %>% #Fit models
     fit(data = df)
