@@ -132,7 +132,7 @@ Tabla_4 <- Tabla_4 %>% rename(n_esc_apr=p6210s1) #escolaridad
 Tabla_4 <- Tabla_4 %>% rename(c_ocup=p6240) #ocupación
 Tabla_4 <- Tabla_4 %>% rename(exp=p6426) #experiencia 
 Tabla_4 <- Tabla_4 %>% rename(n_hsem=hoursWorkUsual) #horas trabajadas en la semana
-Tabla_4 <- Tabla_4 %>% rename(Tamaño_empresa=p6870) # No. de Empleados por empresa
+Tabla_4 <- Tabla_4 %>% rename(Size_empresa=p6870) # No. de Empleados por empresa
 Tabla_4 <- Tabla_4 %>% rename(c_cotiz=p6920) #cotiza en fondo de pensiones
 Tabla_4 <- Tabla_4 %>% rename(Horas_trabajadas=totalHoursWorked)
 Tabla_4 <- Tabla_4 %>% rename(Ing_Total=ingtot) #Ingreso Total
@@ -147,7 +147,7 @@ Tabla_4$Educ <- as.integer(Tabla_4$Educ1)
 #Selección de Variables a Analizar
 Tabla_4 <- Tabla_4 %>%
   select(Estrato, Sexo, Edad, Educ, n_esc_apr, exp,RES, RME, 
-         n_hsem, Tamaño_empresa, c_cotiz,pet, Ingreso_Mon_1, Ingreso_Mon_2,
+         n_hsem, Size_empresa, c_cotiz,pet, Ingreso_Mon_1, Ingreso_Mon_2,
          Ing_Total, depto, c_mne, college, cotPension,
          dsi, pea, inac, Horas_trabajadas, formal, informal, cuentaPropia, microEmpresa, 
          sizeFirm, y_salary_m,  w_hora, y_ingLab_m, y_ingLab_m_ha, y_total_m, y_total_m_ha)
@@ -157,7 +157,7 @@ Tabla_Stat <- Tabla_4  %>% select(Horas_trabajadas,
                                   Educ, 
                                   Edad, 
                                   exp,
-                                  Tamaño_empresa,
+                                  Size_empresa,
                                   Estrato)
 stargazer(data.frame(Tabla_Stat), header=FALSE, type='text',title="Estadisticas Descriptivas Variables Seleccionadas")
 
@@ -217,9 +217,9 @@ Tabla_ingresos_edad <- Tabla_4 %>%
             Ingreso_Total = mean(Ing_Total),
             Nivel_Educ = round(mean(Educ)),
             Estrat = round(mlv(Estrato)),
-            Tam_empresa = round(mlv(Tamaño_empresa)),
+            Tam_empresa = round(mlv(Size_empresa)),
             CantidadPersonas = round((sum(Sexo) / sum(Tabla_4$Sexo)) * 100,digits = 1))
-colnames(Tabla_ingresos_edad) <- c("Rango de Edad", "Salario por hora", "Salario Mensual","Ingreso Total","Nivel Educativo Medio","Estrato","Tamaño Empresas", "% de Individuos")
+colnames(Tabla_ingresos_edad) <- c("Rango de Edad", "Salario por hora", "Salario Mensual","Ingreso Total","Nivel Educativo Medio","Estrato","Size Empresas", "% de Individuos")
 Tabla_ingresos_edad
 
 Tabla_ingresos_edad <- Tabla_ingresos_edad %>%
@@ -266,7 +266,7 @@ Graph_we
 dev.off() 
 
 ###---------------------------------------Regresión Ejercicio 1-------------------------------------------#
-Mod <- lm.fit <- lm(lw_hora ~ Educ + exp + exp2 + Sexo + Edad + Horas_trabajadas + Tamaño_empresa + Sector + Estrato, data = Tabla_4)
+Mod <- lm.fit <- lm(lw_hora ~ Educ + exp + exp2 + Sexo + Edad + Horas_trabajadas + Size_empresa + Sector + Estrato, data = Tabla_4)
 Mod_stargazer <- stargazer(Mod,type="text", omit.stat=c("ser","f","adj.rsq"),  digits = 3)
 Mod_stargazer <- as.data.frame(Mod_stargazer)
 #Reg <- "C:/Output R/Taller_1/Taller_1/Mod_stargazer.xlsx"
@@ -368,14 +368,14 @@ Modm_stargazer <- as.data.frame(Modm_stargazer)
 
 #----------------------------------------------INCISO 4.Bi----------------------------------------#
 # Regresión log(w_hora) sobre las demas variables
-Reg_bs1<-lm(lw_hora ~ mujer + Edad +Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas + Sector + Estrato, data =Tabla_4)
+Reg_bs1<-lm(lw_hora ~ mujer + Edad +Edad2 + Educ + exp + exp2 + Size_empresa + Horas_trabajadas + Sector + Estrato, data =Tabla_4)
 stargazer(Reg_bs1,type="text",digits=3, omit.stat=c("ser","f","adj.rsq"))
 
 #1) Regresion var=mujer sobre las demas variables (Reg1)
-Tabla_4 <-Tabla_4 %>% mutate(Mujer_Resid=lm(mujer~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas + Sector + Estrato,Tabla_4)$residuals)
+Tabla_4 <-Tabla_4 %>% mutate(Mujer_Resid=lm(mujer~ Edad + Edad2 + Educ + exp + exp2 + Size_empresa + Horas_trabajadas + Sector + Estrato,Tabla_4)$residuals)
 
 #2) Regresión log(w_hora) sobre las demas variables excepto mujer
-Tabla_4 <-Tabla_4 %>% mutate(lw_hora_Resid=lm(lw_hora~ Edad + Edad2+ Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas + Sector + Estrato,Tabla_4)$residuals) #Residuals of mpg~foreign
+Tabla_4 <-Tabla_4 %>% mutate(lw_hora_Resid=lm(lw_hora~ Edad + Edad2+ Educ + exp + exp2 + Size_empresa + Horas_trabajadas + Sector + Estrato,Tabla_4)$residuals) #Residuals of mpg~foreign
 
 #3) Regresión de los residuos de la Reg1 sobre los residuos de la Reg2
 Reg_bs2<-lm(lw_hora_Resid ~ Mujer_Resid,Tabla_4)
@@ -418,15 +418,15 @@ boots_fwl <- for (i in 1:B) {
   sample_data <- Tabla_4[sample_indices, ]
   
   # Ajustar brecha_salarial1 en la muestra bootstrap
-  fwl_mod1 <- lm(lw_hora ~ mujer + Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas + Sector + Estrato, data = sample_data)
+  fwl_mod1 <- lm(lw_hora ~ mujer + Edad + Edad2 + Educ + exp + exp2 + Size_empresa + Horas_trabajadas + Sector + Estrato, data = sample_data)
   
   # Regresion var=mujer sobre las demas variables (Reg1)
   sample_data<- sample_data %>%
-    mutate(Mujer_Resid  = lm(mujer ~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas + Sector + Estrato, data = sample_data)$residuals)
+    mutate(Mujer_Resid  = lm(mujer ~ Edad + Edad2 + Educ + exp + exp2 + Size_empresa + Horas_trabajadas + Sector + Estrato, data = sample_data)$residuals)
   
   # Regresión log(w_hora) sobre las demas variables excepto mujer
   sample_data<- sample_data %>%
-    mutate(lw_hora_Resid = lm(lw_hora ~ Edad + Edad2 + Educ + exp + exp2 + Tamaño_empresa + Horas_trabajadas + Sector + Estrato, data = sample_data)$residuals)
+    mutate(lw_hora_Resid = lm(lw_hora ~ Edad + Edad2 + Educ + exp + exp2 + Size_empresa + Horas_trabajadas + Sector + Estrato, data = sample_data)$residuals)
   
   #Regresión de los residuos de la Reg1 sobre los residuos de la Reg2
   fwl_mod2 <- lm(lw_hora_Resid ~ Mujer_Resid, data = sample_data)
@@ -532,7 +532,7 @@ Sig_Economica3 <- as.data.frame(Sig_Economica3)
 
 #### Creacion del Gráfico 
 
-# Secuencia de edades para utilizar en el perfil de ingreso segun el tamaño de la muestra de la base de datos
+# Secuencia de edades para utilizar en el perfil de ingreso segun el Size de la muestra de la base de datos
 Edad_f = seq(min(Tabla_4$Edad), max(Tabla_4$Edad), length.out = 7378)
 
 # Predicciones utilizando el modelo para hombres y mujeres
