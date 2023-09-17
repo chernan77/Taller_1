@@ -17,12 +17,13 @@
 #install.packages("car")
 #install.packages("dplyr")
 #install.packages("xtable")
-#install.packages("DT")
+install.packages("DT")
 install.packages("jpeg")
 install.packages("openxlsx")
 install.packages("readxl")
 install.packages("cowplot")
 install.packages("modeest")
+install.packages("psych")
 
 
 library(modeest)
@@ -46,6 +47,7 @@ library(stargazer)
 library(readxl)
 library(openxlsx)
 library(cowplot)
+library(psych)
 p_load(tidyverse, skimr, stargazer, tidymodels, broom,knitr,kableExtra)
 
 #Importar data
@@ -70,22 +72,21 @@ Tablas <- map(urls, Import_data)
 dataframes <- map(Tablas, as.data.frame)
 Tabla_Total <- bind_rows(dataframes)
 
-####------------Limpieza de Datos----------------------------------####
-####---------------------------------------------------------------###
-
+####-------------------Limpieza de Datos---------------------------####
+####---------------------------------------------------------------####
 
 Tabla_2 <- Tabla_Total %>% filter(age > 18) #Excluir datos de individuos menores a 18 años
 
-#Tabla_2 <- Tabla_2 %>% filter(dsi == 0) # Excluir los desempleados
-#Tabla_2 <- Tabla_2 %>% filter(pea == 1) # Excluir la población económicamente inactiva
+Tabla_2 <- Tabla_2 %>% filter(dsi == 0) # Excluir los desempleados
+Tabla_2 <- Tabla_2 %>% filter(pea == 1) # Excluir la población económicamente inactiva
 
 Tabla_2 <- Tabla_2 %>% rename(w_hora=y_salary_m_hu) # Renombrar la variable Dependiente
 
 Porc_NA <- mean(is.na(Tabla_2$w_hora))* 100 # determinar que % de NA tiene w_hora
 
-cat("La variable w_hora contiene un % de NA=59.3207' es:",Porc_NA, "%\n")
+cat("La variable w_hora contiene un % de NA=40.32' es:",Porc_NA, "%\n")
 
-Tabla_3 <- Tabla_2[!is.na(Tabla_2$w_hora),] #Se eliminarán las filas con NA para columna w_hora
+Tabla_3 <- Tabla_2[!is.na(Tabla_2$w_hora),] #Se eliminarán filas con NA para columna w_hora
 
 #Conservar aquellas columnas cuyo % de NA es menor al 30%
 Criterio <- 30
@@ -98,31 +99,34 @@ Col_NA <- colnames(Tabla_4)[colSums(is.na(Tabla_4)) > 0]
 cat("Columnas que contienen valores NA:\n")
 cat(Col_NA, "\n")
 
-
 Porc_NA1 <- mean(is.na(Tabla_4$maxEducLevel))* 100 # % de NA en maxEducLevel
 
 # Calcular la moda en maxEducLevel e Imputarla en esta columna
 Moda_MLE <- as.character(names(sort(table(Tabla_4$maxEducLevel), decreasing = TRUE)[1]))
 Tabla_4$maxEducLevel[is.na(Tabla_4$maxEducLevel)] <- Moda_MLE
 
-# Seleccionar variables de Remuneraciones Monetarias Extras
+# Remuneraciones Monetarias Extras
 Tabla_4 <- Tabla_4 %>%
   mutate(RME = p6510s1 + p6545s1+p6580s1+p6630s1a1+p6630s2a1+p6630s3a1+p6630s4a1
          +p6630s6a1)
 summary(Tabla_4$RME)
 Porc0_RME <- (sum(Tabla_4$RME == 0, na.rm = TRUE) / sum(!is.na(Tabla_4$RME))) * 100
 
-# Seleccionar variables de Remuneraciones en Especie
+# Remuneraciones Extras en Especie
 Tabla_4 <- Tabla_4 %>%
   mutate(RES = p6585s1a1+p6585s2a1+p6585s3a1+p6585s4a1+p6590s1+p6600s1+p6610s1+p6620s1)
 summary(Tabla_4$RES)
 Porc0_RES <- (sum(Tabla_4$RES == 0, na.rm = TRUE) / sum(!is.na(Tabla_4$RES))) * 100
 
-# Imputar el valor 72 a los valores > 72
-Tabla_4$totalHoursWorked[Tabla_4$totalHoursWorked > 72] <- 72
+# Imputar el valor del umbreal a los valores > 72
+media_ht <- round(mean(Tabla_4$totalHoursWorked))
+desv_ht <-  round(sd(Tabla_4$totalHoursWorked))
+umbral <- media_ht + 2*desv_ht
+Tabla_4$totalHoursWorked[Tabla_4$totalHoursWorked > 72] <- umbral
 
-#Imputar la moda para que aquellos individuos con exp > 65
-Tabla_4$p6426[Tabla_4$p6426 > 65] <- 24
+# Calcular la moda en p6426 e Imputarla en esta columna
+Moda_Exp <- as.numeric(names(sort(table(Tabla_4$p6426), decreasing = TRUE)[1]))
+Tabla_4$p6426[Tabla_4$p6426 > 68] <- Moda_Exp
 
 # Renombrar las variables
 Tabla_4 <- Tabla_4 %>% rename(c_mne=p6210)
@@ -142,7 +146,7 @@ Tabla_4 <- Tabla_4 %>% rename(Ingreso_Mon_1=impa)
 Tabla_4 <- Tabla_4 %>% rename(Ingreso_Mon_2=isa)
 Tabla_4$Educ <- as.integer(Tabla_4$Educ1)
 
-# Analisis Descriptivo de los Datos:
+#Analisis Descriptivo de los Datos:
 
 #Selección de Variables a Analizar
 Tabla_4 <- Tabla_4 %>%
@@ -185,7 +189,6 @@ Tabla_Educ <- Tabla_4 %>%
 colnames(Tabla_Educ) <- c("Nivel Educativo", "Salario por hora", "Salario Mensual","Ingreso Total")
 Tabla_Educ
 
-# Formato a la tabla con kableExtra
 Tabla_Educ <- Tabla_Educ %>%
   kbl() %>%
   kable_styling(full_width = FALSE)
@@ -194,20 +197,23 @@ Tabla_Educ
 #### Analisis descriptivo del ingreso
 Ingresos <- Tabla_4%>%
   select(y_salary_m, Ingreso_Mon_1, Ingreso_Mon_2, Ing_Total, RES, RME,
-         w_hora, y_ingLab_m, y_ingLab_m_ha, y_total_m, y_total_m_ha)
+         w_hora, y_ingLab_m, y_ingLab_m_ha)
 colnames(Ingresos) <- c("Salario Mensual", "Ingreso Monetario 1","Ingreso Monetario 2",
                         "Ingreso Total", "Rem. Adicionales en Especie", "Rem. Monetarias Adicionales",
-                        "Salario por hora", "Ingreso Laboral Mensual", "Ingreso Laboral por Hora", "Ingreso Salarial Total",
-                        "Ingreso Total por Hora")
-skim(Ingresos)
+                        "Salario por hora", "Ingreso Laboral Mensual", "Ingreso Laboral por Hora")
+res_stat <- summary(Ingresos)
+res_stat_m <- stargazer(data.frame(Ingresos), digits=1, header=FALSE, type='text',title="Estadisticas Descriptivas Variables Ingresos")
+res_stat_m <- as.data.frame(res_stat_m)
+Tabla_res_stat <- "C:/Output R/Taller_1/Taller_1/Tabla_Stat.xlsx"
+write_xlsx(res_stat_m, path = Tabla_res_stat)
 
 
-# Crear rangos de edades
+# Rangos de edades
 Tabla_4 <- Tabla_4 %>%
   mutate(RangoEdad = cut(Edad, breaks = c(18, 25, 30, 40, 50, 60, 90),
                          labels = c("18-25", "26-35", "36-45", "46-55", "56-65", "66-90")))
 
-# Resumir ingresos por rango de edades
+# Tabla de Ingresos por rango de edades
 Tabla_ingresos_edad <- Tabla_4 %>%
   group_by(RangoEdad) %>%
   summarise(Salario_Hora = mean(w_hora),
@@ -220,7 +226,6 @@ Tabla_ingresos_edad <- Tabla_4 %>%
 colnames(Tabla_ingresos_edad) <- c("Rango de Edad", "Salario por hora", "Salario Mensual","Ingreso Total","Nivel Educativo Medio","Estrato","Tamaño Empresas", "Numero de Individuos")
 Tabla_ingresos_edad
 
-# Dar formato a la tabla con kableExtra
 Tabla_ingresos_edad <- Tabla_ingresos_edad %>%
   kbl() %>%
   kable_styling(full_width = FALSE)
@@ -253,6 +258,18 @@ Tabla_Sexo <- as.data.frame(Tabla_Sexo)
 #Tabla_S <- "C:/Output R/Taller_1/Taller_1/Tabla_S1.xlsx"
 #write_xlsx(Tabla_Sexo, path = Tabla_S)
 
+# grafica del Log(w_hora), respecto a la Educación
+Graph_we <- ggplot(Tabla_4, aes(x = Nivel_Educativo, y = lw_hora)) +
+  geom_point(alpha = 0.5, color = "red") +
+  labs(x = "Educación", y = "Salario por Hora", title = "Grafica 1: Colombia 2018:Relación entre Salario y la Educación") +
+  theme_minimal() +
+  theme(panel.grid.major = element_line(color = "gray"),
+        axis.line = element_line(color = "gray"),
+        panel.grid.minor = element_blank(),
+        plot.background = element_rect(fill = "transparent", color = NA),
+        plot.title = element_text(hjust = 0.5))
+Graph_we
+
 ### Regresión 1
 Mod <- lm.fit <- lm(lw_hora ~ Educ + exp + exp2 + Sexo + Edad + Horas_trabajadas + Tamaño_empresa + Sector + Estrato, data = Tabla_4)
 Mod_stargazer <- stargazer(Mod,type="text", omit.stat=c("ser","f","adj.rsq"),  digits = 3)
@@ -266,18 +283,18 @@ SE0 <- (exp(Coef)-1)*100
 Sig_Economica <- round((SE0/Media_w_hora)*100, digits = 3)
 Sig_Economica <- as.data.frame(Sig_Economica)
 #T1 <- "C:/Output R/Taller_1/Taller_1/T1_Se.xlsx"
-#write_xlsx(Sig_Economica, path = T1 )
+#write_xlsx(Sig_Económica, path = T1 )
 
 
 ######-------------------------REGRESION 2 ------------------------##########
-##--------------------Bootstrap------------------------------###
+######-------------------------Bootstrap---------------------------#########
 
-#Ajusta el modelo de regresión no lineal:
+#Modelo de regresión no lineal:
 Mod2 <- lm(lw_hora ~ Edad + Edad2, data = Tabla_4)
 Mod2_stargazer <- stargazer(Mod2, type="text", omit.stat=c("ser","f","adj.rsq"))
 Mod2_stargazer <- as.data.frame(Mod2_stargazer)
-#Reg <- "C:/Output R/Taller_1/Taller_1/Mod2_stargazer.xlsx"
-#write_xlsx(Mod2_stargazer, path = Reg )
+Reg <- "C:/Output R/Taller_1/Taller_1/Mod2_stargazer.xlsx"
+write_xlsx(Mod2_stargazer, path = Reg )
 
 # Significancia Económica parámetros
 Coefs <- Mod2$coefficients
@@ -298,11 +315,10 @@ Edad_Mod2 <-function(data,index){
   b2<-Coefs[2]
   b3<-Coefs[3] 
   
-  Edad_Maxima <- round(b2/(-2*b3)) #La edad máxima es 46 años
+  Edad_Maxima <- round(b2/(-2*b3))
   
   return(Edad_Maxima)
 }
-
 
 set.seed(123)
 Res_Edad <- boot(data=Tabla_4, Edad_Mod2,R=1000)
@@ -314,15 +330,16 @@ Interval_ <- quantile(Tabla_Edad_Bootstrap,c(0.025,0.975))
 print(Interval_)
 
 # Secuencia de edades para el gráfico
-Edad_seq <- seq(min(Tabla_4$Edad), max(Tabla_4$Edad), length.out = 1000)
+Edad_seq <- seq(min(Tabla_4$Edad), max(Tabla_4$Edad)) #length.out = 1000)
+print (Edad_seq)
 
-# Perfil estimado de ingresos usando los coeficientes
+# Perfil de Ingreso
 Perfil_Ingreso <- exp(predict(Mod2, newdata = data.frame(Edad = Edad_seq, Edad2 = Edad_seq^2)))
 
 # Calcular los intervalos de confianza para el perfil de ingresos
 Interv_Conf <- predict(Mod2, newdata = data.frame(Edad = Edad_seq, Edad2 = Edad_seq^2), interval = "confidence")
 
-# Extraer los lC-mites inferior (lwr) y superior (upr) de los intervalos de confianza
+# Extraer los limites inferior (lwr) y superior (upr) de los intervalos de confianza
 lwr <- exp(Interv_Conf[, "lwr"])
 upr <- exp(Interv_Conf[, "upr"])
 
@@ -342,6 +359,8 @@ dev.off()
 
 ### Crear la variable mujer
 Tabla_4$mujer <- ifelse(Tabla_4$Sexo == 0, 1, 0)
+
+## ----------------- Regresión 3-----------------#####
 brecha_salarial <- lm(lw_hora ~ mujer, data = Tabla_4)
 Modm_stargazer <- stargazer(brecha_salarial, type="text", digits=3, omit.stat=c("ser","f","adj.rsq"))
 Modm_stargazer <- as.data.frame(Modm_stargazer)
@@ -363,8 +382,8 @@ Reg_bs2<-lm(lw_hora_Resid ~ Mujer_Resid,Tabla_4)
 
 Mod3_stargazer <- stargazer(Reg_bs1,Reg_bs2,type="text",digits=3, omit.stat=c("ser","f","adj.rsq")) 
 Mod3_stargazer <- as.data.frame(Mod3_stargazer)
-#Reg3 <- "C:/Output R/Taller_1/Taller_1/Mod3_stargazer.xlsx"
-#write_xlsx(Mod3_stargazer, path = Reg3)
+Reg3 <- "C:/Output R/Taller_1/Taller_1/Mod3_stargazer.xlsx"
+write_xlsx(Mod3_stargazer, path = Reg3)
 
 
 ####-------------------------Bootstrap---------------------------------------#########
@@ -394,7 +413,7 @@ boots_fwl <- for (i in 1:B) {
   
   bootstrap_mod2 <- lm(lw_hora_Resid ~ Mujer_Resid, data = sample_data)
   
-  # Almacenar los coeficientes estimados y errores estC!ndar
+  # Almacenar los coeficientes estimados y errores estándar
   coef_bootstrap_mod1[i, 1] <- coef(bootstrap_mod1)["mujer"]
   coef_bootstrap_mod1[i, 2] <- summary(bootstrap_mod1)$coefficients["mujer", "Std. Error"]
   
@@ -405,12 +424,10 @@ boots_fwl <- for (i in 1:B) {
 
 Mod4_stargazer <- stargazer(bootstrap_mod1,bootstrap_mod2,type="text",digits=3, omit.stat=c("ser","f","adj.rsq")) 
 Mod4_stargazer <- as.data.frame(Mod4_stargazer)
-#Reg4 <- "C:/Output R/Taller_1/Taller_1/Mod4_stargazer.xlsx"
-#write_xlsx(Mod4_stargazer, path = Reg4)
+Reg4 <- "C:/Output R/Taller_1/Taller_1/Mod4_stargazer.xlsx"
+write_xlsx(Mod4_stargazer, path = Reg4)
 
 #Comparativo de regresiones con y sin Bootstrap:
-
-# Define títulos para cada regresión
 
 Mod_Comparativos <- stargazer(Reg_bs1,Reg_bs2, bootstrap_mod1, bootstrap_mod2, type="text",digits=3, 
                               omit.stat=c("ser","f","adj.rsq"),
@@ -418,7 +435,6 @@ Mod_Comparativos <- stargazer(Reg_bs1,Reg_bs2, bootstrap_mod1, bootstrap_mod2, t
 Mod_Comparativos <- as.data.frame(Mod_Comparativos)
 Reg_Comp <- "C:/Output R/Taller_1/Taller_1/Mod_Comparativos.xlsx"
 write_xlsx(Mod_Comparativos, path = Reg_Comp)
-
 
 # Calcular los intervalos de confianza Bootstrap para los coeficientes
 interval_mod1 <- quantile(coef_bootstrap_mod1, c(0.025, 0.975))
@@ -436,10 +452,7 @@ print(coef_bootstrap_mod2)
 ####################----------------------########################################
 #############----------PERFIL DE INGRESOS POR HOMBRE Y MUJER---------------######
 
-
 ################################ Ejercicio 4.c  ###################################
-
-# Inicializar un dataframe para almacenar los coeficientes de las regresiones
 
 n <- 1000
 # Vectores para almacenar las edades máximas y las diferencias en edades máximas
@@ -450,7 +463,7 @@ diff <- numeric(n)
 set.seed(123)
 for (i in 1:n) {
   # Genera una muestra bootstrap
-    sample_diff <- sample(1:nrow(Tabla_4), replace = TRUE)
+  sample_diff <- sample(1:nrow(Tabla_4), replace = TRUE)
   datos_diff <- Tabla_4[sample_diff, ]
   
   Mod5 <- lm(lw_hora ~ Edad + Edad2 + mujer + Edad*mujer + Edad2*mujer, data = datos_diff)
@@ -461,14 +474,15 @@ for (i in 1:n) {
   d2 <- coefs2['Edad2']
   d3 <- coefs2['Edad:mujer']
   d4 <- coefs2['Edad2:mujer']
+  d5 <- coefs2['mujer']
   
-  # Calcular el punto donde la derivada es igual a cero para hombres
+  # C.P.O hombres
   edad_maxh <- round(-d1 / (2 * d2))
   
-  # Calcular el punto donde la derivada es igual a cero para mujeres
+  # C.P.O mujer
   edad_maxm <- round((-d1 - d3) / (2 * (d2 + d4)))
   
-  # Calcular la diferencia en edades máximas entre hombres y mujeres
+  # Diferencia en edades máximas entre hombres y mujeres
   difmax <- edad_maxh - edad_maxm
   
   # Almacena los resultados en los vectores
@@ -478,35 +492,34 @@ for (i in 1:n) {
   
 }
 
-# Calcula el intervalo de confianza para la diferencia en edades mC!ximas
+# Intervalo de confianza para la diferencia en edades máximas
 nivel_confianza <- 0.95
 quantil_inf <- (1 - nivel_confianza) / 2
 quantil_sup <- 1 - quantil_inf
 
 intervalo_confianza_diferencia <- quantile(diff, c(quantil_inf, quantil_sup))
 
-#Regresión 5
+####-------------------------Regresión 5-------------------------------------#####
+
 Mod5_stargazer <- stargazer(Mod5, type="text", omit.stat=c("ser","f","adj.rsq"),  digits = 3)
 Mod5_stargazer <- as.data.frame(Mod5_stargazer)
-#Reg5 <- "C:/Output R/Taller_1/Taller_1/Mod5_stargazer.xlsx"
-#write_xlsx(Mod5_stargazer, path = Reg5)
+Reg5 <- "C:/Output R/Taller_1/Taller_1/Mod5_stargazer.xlsx"
+write_xlsx(Mod5_stargazer, path = Reg5)
 
 # Significancia Económica parámetros
 Coefs2 <- Mod5$coefficients
 SE2 <- (exp(Coefs2)-1)*100
 Sig_Economica2 <- round(SE2/Media_w_hora*100, digits = 3)
 Sig_Economica2 <- as.data.frame(Sig_Economica2)
-#T3 <- "C:/Output R/Taller_1/Taller_1/T3_Se.xlsx"
-#write_xlsx(Sig_Economica2, path = T3 )
+T3 <- "C:/Output R/Taller_1/Taller_1/T3_Se.xlsx"
+write_xlsx(Sig_Economica2, path = T3 )
 
-# Crear un nuevo conjunto de datos con las edades deseadas para hombres y mujeres
-Edad_f = seq(min(Tabla_4$Edad), max(Tabla_4$Edad), length.out = 1000)
+# Conjunto de datos de edades para hombres y mujeres
+Edad_f = seq(min(Tabla_4$Edad), max(Tabla_4$Edad), length.out = 7378)
 
 # Predicciones utilizando el modelo para hombres y mujeres
 predh <- (predict(Mod5, newdata = data.frame(Edad = Edad_f, Edad2 = Edad_f^2, mujer = 0)))
 predm <- (predict(Mod5, newdata = data.frame(Edad = Edad_f, Edad2 = Edad_f^2, mujer = 1)))
-
-# Convertir predh y predm en matrices
 
 # Intervalos de confianza para las predicciones de ingresos de hombres y mujeres
 int_hombres <-(predict(Mod5, newdata = data.frame(Edad = Edad_f, Edad2 = Edad_f^2, mujer = 0), interval = "confidence"))
@@ -514,14 +527,16 @@ int_mujeres <- (predict(Mod5, newdata = data.frame(Edad = Edad_f, Edad2 = Edad_f
 
 # Gráfico de dispersión con colores por género y bandas de intervalo de confianza
 edadh <- data.frame(
-  Edad = seq(min(Tabla_4$Edad), max(Tabla_4$Edad), length.out = 1000),
-  Edad2 = seq(min(Tabla_4$Edad), max(Tabla_4$Edad)^2, length.out = 1000),
+  Edad = seq(min(Tabla_4$Edad), max(Tabla_4$Edad), length.out = 7378),
+  Edad2 = seq(min(Tabla_4$Edad), max(Tabla_4$Edad)^2, length.out = 7378),
   mujer = 0)
 
 edadm <- data.frame(
-  Edad = seq(min(Tabla_4$Edad), max(Tabla_4$Edad),length.out = 1000),
-  Edad2 = seq(min(Tabla_4$Edad), max(Tabla_4$Edad)^2, length.out = 1000),
+  Edad = seq(min(Tabla_4$Edad), max(Tabla_4$Edad), length.out = 7378),
+  Edad2 = seq(min(Tabla_4$Edad), max(Tabla_4$Edad)^2, length.out = 7378),
   mujer = 1)
+
+
 
 dfpredh <- data.frame(
   Edad = edadh$Edad,
@@ -536,17 +551,6 @@ dfpredm <- data.frame(
   
 )
 
-graph_h <- ggplot(dfpredh, aes(x = Edad, y = Prediccionesh)) +
-  geom_line(color = 'blue') +
-  geom_ribbon(aes(ymin = int_hombres[, "lwr"], ymax = int_hombres[, "upr"]), fill = 'blue', alpha = 0.2) +
-  labs(x = 'Edad', y = 'Perfil de Ingreso', title = expression(atop("Predicción del Perfil de Ingreso Hombres", ""))) +
-  theme(plot.title = element_text(hjust = 0.5))+
-  theme(axis.line = element_line(color = "gray"))+
-  theme(panel.background = element_rect(fill = "transparent", color = NA),
-        panel.grid = element_line(color = "gray")) +
-  coord_cartesian(xlim = c(15, 86), ylim = c(7.5, 9)) 
-graph_h
-
 graph_m <- ggplot(dfpredm, aes(x = Edad, y = Prediccionesm)) +
   geom_line(color = 'red') +
   geom_ribbon(aes(ymin = int_mujeres[, "lwr"], ymax = int_mujeres[, "upr"]), fill = 'red', alpha = 0.2) +
@@ -555,13 +559,24 @@ graph_m <- ggplot(dfpredm, aes(x = Edad, y = Prediccionesm)) +
   theme(axis.line = element_line(color = "gray"))+
   theme(panel.background = element_rect(fill = "transparent", color = NA),
         panel.grid = element_line(color = "gray")) +
-  coord_cartesian(xlim = c(15, 86), ylim = c(7.1, 9)) 
+  coord_cartesian(xlim = c(18, 86), ylim = c(6.8, 9)) 
 graph_m
 
-#Gráfica Conjunta Hombre-Mujer
-Link_C <- "C:/Output R/Taller_1/Taller_1/views/graph2.jpeg"
-jpeg(file = Link_C, width = 1200, height = 600)
-plot_grid(graph_h, graph_m, ncol=2)
+graph_h <- ggplot(dfpredh, aes(x = Edad, y = Prediccionesh)) +
+  geom_line(color = 'blue') +
+  geom_ribbon(aes(ymin = int_hombres[, "lwr"], ymax = int_hombres[, "upr"]), fill = 'blue', alpha = 0.2) +
+  labs(x = 'Edad', y = 'Perfil de Ingreso', title = expression(atop("Predicción del Perfil de Ingreso Hombres", ""))) +
+  theme(plot.title = element_text(hjust = 0.5))+
+  theme(axis.line = element_line(color = "gray"))+
+  theme(panel.background = element_rect(fill = "transparent", color = NA),
+        panel.grid = element_line(color = "gray")) +
+  coord_cartesian(xlim = c(18, 86), ylim = c(7.6, 9)) 
+graph_h
 
+#Gráfica Conjunta Hombre-Mujer
+Link_C1 <- "C:/Output R/Taller_1/Taller_1/views/graph2.jpeg"
+jpeg(file = Link_C1, width = 1200, height = 600)
+plot_grid(graph_h,graph_m, ncol=2)
+dev.off()  
 
 
