@@ -54,7 +54,7 @@ test  <- testing(sample_split)
 
 # b. Report and compare the predictive performance in terms of the RMSE:--------
 
-# Modelos:
+# Especificaciones de modelos utilizados:
 model1 <- recipe(lw_hora~ Edad + Edad2, data = train)
 model2 <- recipe(lw_hora~ Sexo, data = train)
 model3 <- recipe(lw_hora~ Edad + Edad2 + Sexo, data = train)
@@ -68,6 +68,8 @@ model7 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Edu
   step_dummy(all_factor_predictors())
 model8 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ+ informal + Sector + Tamaño_empresa, data = train)  %>%
   step_dummy(all_factor_predictors())
+model9 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + maxEducLevel + Sector + Tamaño_empresa, data = train)  %>%
+  step_dummy(all_factor_predictors())
 model10 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Tamaño_empresa + exp , data = train)  %>%
   step_dummy(all_factor_predictors())
 
@@ -77,22 +79,23 @@ model7_2 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + E
 model7_3 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + informal, data = train)  %>%
   step_interact(terms = ~ Sexo:Educ + Sexo:informal) %>%
   step_dummy(all_factor_predictors())
-model7_3 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + informal, data = train)  %>%
+model7_4 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + informal, data = train)  %>%
   step_interact(terms = ~ Sexo:Educ + Sexo:Horas_trabajadas) %>%
   step_dummy(all_factor_predictors())
 
 #List models
-modelos<-list(model1, model2, model3, model4, model5, model6, model7, model8, model10, model7_2, model7_3)
+modelos<-list(model1, model2, model3, model4, model5, model6, model7, model8, model9, model10, model7_2, model7_3, model7_4,)
 
-# Create loop to fit
+# Create loop to fit with workflows
+
 fit_model <- function(x, df=train) {
-  linear_model <- linear_reg()
+  linear_model <- linear_reg() # Modelo original es lineal
   
-  work_flow <- workflow() %>% 
+  work_flow <- workflow() %>%  #Creación de los workflows
     add_recipe(x) %>% 
     add_model(linear_model)
   
-  fit_model <- work_flow %>% 
+  fit_model <- work_flow %>% #Fit models
     fit(data = df)
   
   fit_model
