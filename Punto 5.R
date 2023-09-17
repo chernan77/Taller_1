@@ -118,7 +118,7 @@ fit_model <- function(x, df=train) {
   fit_model
 }
 
-workflows <- lapply(modelos, function(x){fit_model(x, train)})
+modelos <- lapply(modelos, function(x){fit_model(x, train)})
 
 # Create loop to test
 predict_from_workflow <- function(w, df_test=test) {
@@ -133,7 +133,7 @@ rmse_from_predict <- function(pred) {
   test_rmse$.estimate
 }
 
-predictions <- lapply(workflows, function (w){predict_from_workflow(w, test)})
+predictions <- lapply(modelos, function (w){predict_from_workflow(w, test)})
 
 rmse <- lapply(list_predictions, function (pred){rmse_from_predict(pred)})
 
@@ -151,3 +151,16 @@ workflows_loocv <- rmse_df$Workflow[order(rmse_df$RMSE)[1:2]]
 
 loocv_model1 <- vector("numeric", length = nrow(Tabla_4))
 
+for (i in seq_len(nrow(Tabla_4))) {
+  loocv_data <- Tabla_4[-i, ]
+  loocv_fit <- modelos[[2]] %>% fit(data = loocv_data)
+  pred <- predict(loo_fit, new_data = slice(Tabla_4, i))$.pred
+  loocv_model1[i] <- pred
+  print(paste0("Iteration: ",i))
+}
+
+loocv_prediction <-bind_cols(Tabla_4$lw_hora, loocv_model1)
+
+loocv_rmse <- rmse(temp, truth = ...1, estimate = ...2)
+
+loocv_rmse$.estimate
