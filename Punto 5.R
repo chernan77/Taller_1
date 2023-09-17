@@ -77,17 +77,17 @@ model6 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Edu
   step_dummy(all_factor_predictors())
 model7 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + Sector, data = train)  %>%
   step_dummy(all_factor_predictors())
-model8 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ+ informal + Sector + Tamaño_empresa, data = train)  %>%
+model8 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ+ informal + Sector + Size_empresa, data = train)  %>%
   step_dummy(all_factor_predictors())
-model9 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + maxEducLevel + Sector + Tamaño_empresa, data = train)  %>%
+model9 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + maxEducLevel + Sector + Size_empresa, data = train)  %>%
   step_dummy(all_factor_predictors())
-model10 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Tamaño_empresa + exp , data = train)  %>%
+model10 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Size_empresa + exp , data = train)  %>%
   step_dummy(all_factor_predictors())
-model10_2 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Tamaño_empresa , data = train)  %>%
+model10_2 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Size_empresa , data = train)  %>%
   step_dummy(all_factor_predictors())
-model10_3 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Tamaño_empresa + Educ , data = train)  %>%
+model10_3 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Size_empresa + Educ , data = train)  %>%
   step_dummy(all_factor_predictors())
-model10_4 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Tamaño_empresa + maxEducLevel , data = train)  %>%
+model10_4 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Size_empresa + maxEducLevel , data = train)  %>%
   step_dummy(all_factor_predictors())
 
 model7_2 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + informal, data = train)  %>%
