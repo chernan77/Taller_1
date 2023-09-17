@@ -72,6 +72,12 @@ model9 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + max
   step_dummy(all_factor_predictors())
 model10 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Tamaño_empresa + exp , data = train)  %>%
   step_dummy(all_factor_predictors())
+model10_2 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Tamaño_empresa , data = train)  %>%
+  step_dummy(all_factor_predictors())
+model10_3 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Tamaño_empresa + Educ , data = train)  %>%
+  step_dummy(all_factor_predictors())
+model10_4 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Tamaño_empresa + maxEducLevel , data = train)  %>%
+  step_dummy(all_factor_predictors())
 
 model7_2 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + informal, data = train)  %>%
   step_interact(terms = ~ Sexo:Educ + Sexo:Estrato) %>%
@@ -84,7 +90,7 @@ model7_4 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + E
   step_dummy(all_factor_predictors())
 
 #List models
-modelos<-list(model1, model2, model3, model4, model5, model6, model7, model8, model9, model10, model7_2, model7_3, model7_4,)
+modelos<-list(model1, model2, model3, model4, model5, model6, model7, model8, model9, model10, model10_2, model10_3, model10_4, model7_2, model7_3, model7_4,)
 
 # Create loop to fit with workflows
 
