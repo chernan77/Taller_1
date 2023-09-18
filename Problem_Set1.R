@@ -118,6 +118,34 @@ Tabla_4 <- Tabla_4 %>%
 summary(Tabla_4$RES)
 Porc0_RES <- (sum(Tabla_4$RES == 0, na.rm = TRUE) / sum(!is.na(Tabla_4$RES))) * 100
 
+#Tabla_htm <- Tabla_2 %>% filter(totalHoursWorked) 
+Tabla_2_1 <- Tabla_2 %>% filter(formal == 1)
+Tabla_2_0 <- Tabla_2 %>% filter(informal == 1)
+
+Graph_ht1 <- ggplot(Tabla_2_1, aes(x = totalHoursWorked, y = w_hora)) +
+  geom_point(alpha = 0.5, color = "red") +
+  labs(x = "Horas Trabajadas Sector Formal", y = "Salario por Hora", title = "Grafica 3: Colombia 2018:Salario y Horas Trabajadas Formal") +
+  theme_minimal() +
+  theme(panel.grid.major = element_line(color = "gray"),
+        axis.line = element_line(color = "gray"),
+        panel.grid.minor = element_blank(),
+        plot.background = element_rect(fill = "transparent", color = NA),
+        plot.title = element_text(hjust = 0.5))
+Graph_ht1
+
+Graph_ht0 <- ggplot(Tabla_2_0, aes(x = totalHoursWorked, y = w_hora)) +
+  geom_point(alpha = 0.5, color = "red") +
+  labs(x = "Horas Trabajadas Sector Informal", y = "Salario por Hora", title = "Grafica 4: Colombia 2018:Salario y Horas Trabajadas Informal") +
+  theme_minimal() +
+  theme(panel.grid.major = element_line(color = "gray"),
+        axis.line = element_line(color = "gray"),
+        panel.grid.minor = element_blank(),
+        plot.background = element_rect(fill = "transparent", color = NA),
+        plot.title = element_text(hjust = 0.5))
+Graph_ht0
+
+plot_grid(Graph_ht1,Graph_ht0, ncol=2)
+
 # Imputar el valor del umbral a los valores > 72
 media_ht <- round(mean(Tabla_4$totalHoursWorked))
 desv_ht <-  round(sd(Tabla_4$totalHoursWorked))
@@ -259,7 +287,7 @@ Tabla_Sexo <- as.data.frame(Tabla_Sexo)
 #jpeg(file = Link_C1, width = 800, height = 300)
 Graph_we <- ggplot(Tabla_4, aes(x = Nivel_Educativo, y = lw_hora)) +
   geom_point(alpha = 0.5, color = "red") +
-  labs(x = "EducaciC3n", y = "Salario por Hora", title = "Grafica 1: Colombia 2018:RelaciC3n entre Salario y la EducaciC3n") +
+  labs(x = "Educación", y = "Salario por Hora", title = "Grafica 1: Colombia 2018:Relación entre Salario y la Educación") +
   theme_minimal() +
   theme(panel.grid.major = element_line(color = "gray"),
         axis.line = element_line(color = "gray"),
@@ -268,6 +296,12 @@ Graph_we <- ggplot(Tabla_4, aes(x = Nivel_Educativo, y = lw_hora)) +
         plot.title = element_text(hjust = 0.5))
 Graph_we
 dev.off() 
+
+# grafica del Log(w_hora), respecto a la Educación
+#Link_C1 <- "C:/Output R/Taller_1/Taller_1/views/graph1.jpeg"
+#jpeg(file = Link_C1, width = 800, height = 300)
+
+
 
 ###---------------------------------------Regresión Ejercicio 1-------------------------------------------#
 Mod <- lm.fit <- lm(lw_hora ~ Educ + exp + exp2 + Sexo + Edad + Horas_trabajadas + Size_empresa + Sector + Estrato, data = Tabla_4)
