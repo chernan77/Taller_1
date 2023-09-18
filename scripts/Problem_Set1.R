@@ -28,8 +28,22 @@
 #install.packages("cowplot") #extensión de "ggplot2" en R que facilita la creación de gráficos complejos
 #install.packages("modeest") # para calcular y estimar la moda 
 #install.packages("psych")
+install.packages("yardstick")
+install.packages("tidymodels")
+install.packages("rsample")
+install.packages("recipes")
+install.packages("parsnip")
+install.packages("workflows")
+installed.packages("glm")
+install.packages("caret")
 
-# Cargaos los Paquetes
+# Cargar los Paquetes
+library(caret)
+library(workflows)
+library(parsnip)
+library(recipes)
+library(rsample)
+library(yardstick)
 library(modeest)
 library(rvest)
 library(purrr)
@@ -51,12 +65,13 @@ library(readxl)
 library(openxlsx)
 library(cowplot)
 library(psych)
+library(tidymodels)
 p_load(tidyverse, skimr, stargazer, tidymodels, broom,knitr,kableExtra)
 
 #-----------------------------------------------EJERCICIO 1----------------------------------------------#
 #Importar data
-# Se importa la data desde la pagina web "https://ignaciomsarmiento.github.io/GEIH2018 sample/ que contiene la data de 
-#la encuesta  GEIH de Bogota from the 2018 "Medición de Pobreza Monetaria y Desigualdad Report
+# Se importa la data desde la página web "https://ignaciomsarmiento.github.io/GEIH2018 sample/ que contiene la data de 
+#la encuesta  GEIH de Bogota from the 2018 "MediciC3n de Pobreza Monetaria y Desigualdad Report
 #este código se utiliza para realizar web scraping en varias páginas web cuyas URL se encuentran en el vector urls
 
 urls <- c("https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_1.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_2.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_3.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_4.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_5.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_6.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_7.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_8.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_9.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_10.html")
@@ -75,7 +90,7 @@ Import_data <- function(urls) {
 
 Tablas <- map(urls, Import_data)
 dataframes <- map(Tablas, as.data.frame)
-Tabla_Total <- bind_rows(dataframes) # Se combinan todas las tablas en un único dataframe llamado Tabla_Total
+Tabla_Total <- bind_rows(dataframes) # Se combinan todas las tablas en un unico dataframe llamado Tabla_Total
 
 ####-------------------------------------Limpieza de Datos------------------------------------------####
 
@@ -114,6 +129,34 @@ Tabla_4 <- Tabla_4 %>%
 summary(Tabla_4$RES)
 Porc0_RES <- (sum(Tabla_4$RES == 0, na.rm = TRUE) / sum(!is.na(Tabla_4$RES))) * 100
 
+#Tabla_htm <- Tabla_2 %>% filter(totalHoursWorked) 
+Tabla_2_1 <- Tabla_2 %>% filter(formal == 1)
+Tabla_2_0 <- Tabla_2 %>% filter(informal == 1)
+
+Graph_ht1 <- ggplot(Tabla_2_1, aes(x = totalHoursWorked, y = w_hora)) +
+  geom_point(alpha = 0.5, color = "red") +
+  labs(x = "Horas Trabajadas Sector Formal", y = "Salario por Hora", title = "Grafica 3: Colombia 2018:Salario y Horas Trabajadas Formal") +
+  theme_minimal() +
+  theme(panel.grid.major = element_line(color = "gray"),
+        axis.line = element_line(color = "gray"),
+        panel.grid.minor = element_blank(),
+        plot.background = element_rect(fill = "transparent", color = NA),
+        plot.title = element_text(hjust = 0.5))
+Graph_ht1
+
+Graph_ht0 <- ggplot(Tabla_2_0, aes(x = totalHoursWorked, y = w_hora)) +
+  geom_point(alpha = 0.5, color = "red") +
+  labs(x = "Horas Trabajadas Sector Informal", y = "Salario por Hora", title = "Grafica 4: Colombia 2018:Salario y Horas Trabajadas Informal") +
+  theme_minimal() +
+  theme(panel.grid.major = element_line(color = "gray"),
+        axis.line = element_line(color = "gray"),
+        panel.grid.minor = element_blank(),
+        plot.background = element_rect(fill = "transparent", color = NA),
+        plot.title = element_text(hjust = 0.5))
+Graph_ht0
+
+plot_grid(Graph_ht1,Graph_ht0, ncol=2)
+
 # Imputar el valor del umbral a los valores > 72
 media_ht <- round(mean(Tabla_4$totalHoursWorked))
 desv_ht <-  round(sd(Tabla_4$totalHoursWorked))
@@ -124,8 +167,8 @@ Tabla_4$totalHoursWorked[Tabla_4$totalHoursWorked > 72] <- umbral
 Moda_Exp <- as.numeric(names(sort(table(Tabla_4$p6426), decreasing = TRUE)[1]))
 Tabla_4$p6426[Tabla_4$p6426 > 68] <- Moda_Exp
 
-# Renombrar las variables para una mayor comprension de que variables estamos trabajando
-Tabla_4 <- Tabla_4 %>% rename(c_mne=p6210) #Nivel educativo mas alto
+# Renombrar las variables para una mayor comprensión de las variables que estamos trabajando
+Tabla_4 <- Tabla_4 %>% rename(c_mne=p6210) #Nivel educativo más alto
 Tabla_4 <- Tabla_4 %>% rename(Edad=age) # edad
 Tabla_4 <- Tabla_4 %>% rename(Sexo=sex) #sexo
 Tabla_4 <- Tabla_4 %>% rename(n_esc_apr=p6210s1) #escolaridad
@@ -142,13 +185,15 @@ Tabla_4 <- Tabla_4 %>% rename(Ingreso_Mon_1=impa) #Ingreso monetario de la prime
 Tabla_4 <- Tabla_4 %>% rename(Ingreso_Mon_2=isa) #Ingreso monetario de la segunda actividad antes de imputación
 Tabla_4$Educ <- as.integer(Tabla_4$Educ1)
 
+Tabla_4$oficio <- as.factor(Tabla_4$oficio)
+
 #Analisis Descriptivo de los Datos:
 
 #Selección de Variables a Analizar
 Tabla_4 <- Tabla_4 %>%
   select(Estrato, Sexo, Edad, Educ, n_esc_apr, exp,RES, RME, 
          n_hsem, Size_empresa, c_cotiz,pet, Ingreso_Mon_1, Ingreso_Mon_2,
-         Ing_Total, depto, c_mne, college, cotPension,
+         Ing_Total, depto, c_mne, college, cotPension,oficio,
          dsi, pea, inac, Horas_trabajadas, formal, informal, cuentaPropia, microEmpresa, 
          sizeFirm, y_salary_m,  w_hora, y_ingLab_m, y_ingLab_m_ha, y_total_m, y_total_m_ha)
 
@@ -161,7 +206,7 @@ Tabla_Stat <- Tabla_4  %>% select(Horas_trabajadas,
                                   Estrato)
 stargazer(data.frame(Tabla_Stat), header=FALSE, type='text',title="Estadisticas Descriptivas Variables Seleccionadas")
 
-## asignando etiquetas a la variable Nivel Educativo
+## Asignando etiquetas a la variable Nivel Educativo
 Tabla_4 <- Tabla_4 %>%
   mutate(Nivel_Educativo = case_when(
     Educ == 1 ~ "Ninguna",
@@ -228,10 +273,11 @@ Tabla_ingresos_edad <- Tabla_ingresos_edad %>%
 Tabla_ingresos_edad
 
 
-# Transformación de variables para el Modelo en Base a la Teoría Mincer
+# Transformación de variables para el Modelo en Base a la teoría de Mincer
 Tabla_4$Sector <- ifelse(Tabla_4$formal == 1 & Tabla_4$informal == 0, 1, 0) # dummy del sector formal e informal
 Tabla_4$lw_hora <- log(Tabla_4$w_hora) # Transformación Logaritmica del salario por hora
 Tabla_4$exp2 <- Tabla_4$exp^2  # Construcción de la variable experiencia al cuadrado
+Tabla_4$Horas_trabajadas2 <- Tabla_4$Horas_trabajadas^2  # Construcción de la variable horas trabajadas al cuadrado
 Tabla_4$Edad2 <- Tabla_4$Edad^2 # Construcción de la variable Edad al cuadrado
 Media_w_hora <- mean(Tabla_4$w_hora)
 Tabla_5 <- Tabla_4
@@ -265,6 +311,15 @@ Graph_we <- ggplot(Tabla_4, aes(x = Nivel_Educativo, y = lw_hora)) +
 Graph_we
 dev.off() 
 
+# grafica del Log(w_hora), respecto a la Educación
+#Link_C1 <- "C:/Output R/Taller_1/Taller_1/views/graph1.jpeg"
+#jpeg(file = Link_C1, width = 800, height = 300)
+
+#Tabla_4 <- as.data.frame(Tabla_4)
+#Tabla_4_Ex <- "C:/Output R/Taller_1/Taller_1/Tabla_Excel.xlsx"
+#write_xlsx(Tabla_4, path = Tabla_4_Ex)
+
+
 ###---------------------------------------Regresión Ejercicio 1-------------------------------------------#
 Mod <- lm.fit <- lm(lw_hora ~ Educ + exp + exp2 + Sexo + Edad + Horas_trabajadas + Size_empresa + Sector + Estrato, data = Tabla_4)
 Mod_stargazer <- stargazer(Mod,type="text", omit.stat=c("ser","f","adj.rsq"),  digits = 3)
@@ -278,7 +333,7 @@ SE0 <- (exp(Coef)-1)*100
 Sig_Economica <- round((SE0/Media_w_hora)*100, digits = 3)
 Sig_Economica <- as.data.frame(Sig_Economica)
 #T1 <- "C:/Output R/Taller_1/Taller_1/T1_Se.xlsx"
-#write_xlsx(Sig_Económica, path = T1 )
+#write_xlsx(Sig_EconC3mica, path = T1 )
 
 
 ##--------------------------------------------EJERCICIO_3----------------------------------------------##
@@ -291,7 +346,7 @@ Mod2_stargazer <- as.data.frame(Mod2_stargazer)
 #Reg <- "C:/Output R/Taller_1/Taller_1/Mod2_stargazer.xlsx"
 #write_xlsx(Mod2_stargazer, path = Reg )
 
-#---------------------------------3.B) Significancia Económica parámetros--------------------------------#
+#---------------------------------3.B) Significancia EconC3mica parC!metros--------------------------------#
 Coefs <- Mod2$coefficients
 SE1 <- (exp(Coefs)-1)*100
 Sig_Economica1 <- round(SE1/Media_w_hora*100, digits = 3)
@@ -340,9 +395,9 @@ Interv_Conf <- predict(Mod2, newdata = data.frame(Edad = Edad_seq, Edad2 = Edad_
 lwr <- exp(Interv_Conf[, "lwr"])
 upr <- exp(Interv_Conf[, "upr"])
 
-## Se construye el Gráfico del Perfil de Ingreso
-Link_C <- "C:/Output R/Taller_1/Taller_1/views/graph2.jpeg"
-jpeg(file = Link_C, width = 900, height = 600)
+## Se construye el GrC!fico del Perfil de Ingreso
+#Link_C <- "C:/Output R/Taller_1/Taller_1/views/graph2.jpeg"
+#jpeg(file = Link_C, width = 900, height = 600)
 plot(Edad_seq, Perfil_Ingreso, type = "l", xlab = "Edad", ylab = "Salario por Hora Estimado", main = "Grafica 2: Perfil Estimado de Edad-Ingresos")  # Vuelve a crear el grC!fico dentro de png()
 lines(Edad_seq, lwr, col = "red", lty = 2)
 lines(Edad_seq, upr, col = "red", lty = 2)
@@ -380,7 +435,7 @@ Tabla_4 <-Tabla_4 %>% mutate(lw_hora_Resid=lm(lw_hora~ Edad + Edad2+ Educ + exp 
 #3) Regresión de los residuos de la Reg1 sobre los residuos de la Reg2
 Reg_bs2<-lm(lw_hora_Resid ~ Mujer_Resid,Tabla_4)
 
-Mod3_stargazer <- stargazer(Reg_bs1,Reg_bs2,type="text",digits=3, omit.stat=c("ser","f","adj.rsq")) 
+Mod3_stargazer <- stargazer(Reg_bs1,Reg_bs2,type="text",digits=6, omit.stat=c("ser","f","adj.rsq")) 
 Mod3_stargazer <- as.data.frame(Mod3_stargazer)
 #Reg3 <- "C:/Output R/Taller_1/Taller_1/Mod3_stargazer.xlsx"
 #write_xlsx(Mod3_stargazer, path = Reg3)
@@ -393,7 +448,7 @@ Sig_Economica2 <- as.data.frame(Sig_Economica2)
 #T3 <- "C:/Output R/Taller_1/Taller_1/T3_Se.xlsx"
 #write_xlsx(Sig_Economica2, path = T3)
 
-# Significancia Económica parámetros
+# Significancia EconC3mica parámetros
 Coefs3 <- Reg_bs2$coefficients
 SE3 <- (exp(Coefs3)-1)*100
 Sig_Economica3 <- round(SE3/Media_w_hora*100, digits = 3)
@@ -407,8 +462,7 @@ B <- 1000
 # Matrices para almacenar los resultados de fwl_mod1 y fwl_mod2
 coef_mod1 <- matrix(NA, nrow = B, ncol = 2)  # Coeficientes de fwl_mod1
 coef_mod2 <- matrix(NA, nrow = B, ncol = 2)  # Coeficientes de fwl_mod2
-diff_mod <- matrix(NA, nrow = B, ncol = 1)  # diferencia de los coeficientes fwl_mod1 y fwl_mod2
-diff_error <- matrix(NA, nrow = B, ncol = 1)  # diferencia de errores estandar fwl_mod1 y fwl_mod2
+
 
 # Realizar el proceso de Bootstrap
 set.seed(123)
@@ -437,8 +491,6 @@ boots_fwl <- for (i in 1:B) {
   
   coef_mod2[i, 1] <- coef(fwl_mod2)["Mujer_Resid"]
   coef_mod2[i, 2] <- summary(fwl_mod2)$coefficients["Mujer_Resid", "Std. Error"]
-  diff_mod[i] <-coef_mod1[i, 1]-coef_mod2[i, 1]
-  diff_error[i] <-coef_mod1[i, 2]-coef_mod2[i, 2]
   
 }
 
@@ -450,26 +502,17 @@ Mod4_stargazer <- as.data.frame(Mod4_stargazer)
 #Comparativo de regresiones con y sin Bootstrap:
 Mod_Comparativos <- stargazer(Reg_bs1,Reg_bs2, fwl_mod1, fwl_mod2, type="text",digits=3, 
                               omit.stat=c("ser","f","adj.rsq"),
-                              notes = c("Notas: (1) y (2) con muestra única y (3) y (4) con Bootstrap"))
+                              notes = c("Notas: (1) y (2) con muestra C:nica y (3) y (4) con Bootstrap"))
 Mod_Comparativos <- as.data.frame(Mod_Comparativos)
 #Reg_Comp <- "C:/Output R/Taller_1/Taller_1/Mod_Comparativos.xlsx"
 #write_xlsx(Mod_Comparativos, path = Reg_Comp)
-
-## Calular intervalos de confianza para la diferencia entre los coeficientes y errores estandar
-interval_diff_mod <- quantile(diff_mod, c(0.025, 0.975))
-interval_diff_error <- quantile(diff_error, c(0.025, 0.975))
-# Imprimir los intervalos de confianza para fwl_mod1
-cat("IC Bootstrap para el coeficiente de mujer en fwl_mod1:", interval_diff_mod[1], "-", interval_diff_mod[2], "\n")
-
-# Imprimir los intervalos de confianza para fwl_mod2
-cat("IC Bootstrap para el coeficiente de mujerResid en fwl_mod2:", interval_diff_error[1], "-", interval_diff_error[2], "\n")
 
 print(coef_mod1)
 print(coef_mod2)
 
 #################################################Ejercicio 4.c##############################################
 
-### Calculo de la diferencias de edades
+### Cálculo de la diferencias de edades
 
 n <- 1000
 # Vectores para almacenar las edades máximas y las diferencias en edades máximas
@@ -486,7 +529,7 @@ for (i in 1:n) {
   Mod5 <- lm(lw_hora ~ Edad + Edad2 + mujer + Edad*mujer + Edad2*mujer, data = datos_diff)
   coefs2 <- coef(Mod5)
   
-  # El coeficiente correspondiente a 'Edad' en la regresiCon lineal
+  # El coeficiente correspondiente a 'Edad' en la regresión lineal
   d1 <- coefs2['Edad']
   d2 <- coefs2['Edad2']
   d3 <- coefs2['Edad:mujer']
@@ -522,7 +565,7 @@ Mod5_stargazer <- as.data.frame(Mod5_stargazer)
 #Reg5 <- "C:/Output R/Taller_1/Taller_1/Mod5_stargazer.xlsx"
 #write_xlsx(Mod5_stargazer, path = Reg5)
 
-# Significancia Económica parámetros
+# Significancia EconC3mica parC!metros
 Coefs4 <- Mod5$coefficients
 SE3 <- (exp(Coefs4)-1)*100
 Sig_Economica3 <- round(SE2/Media_w_hora*100, digits = 3)
@@ -530,7 +573,7 @@ Sig_Economica3 <- as.data.frame(Sig_Economica3)
 #T4 <- "C:/Output R/Taller_1/Taller_1/T4_Se.xlsx"
 #write_xlsx(Sig_Economica3, path = T4 )
 
-#### Creacion del Gráfico 
+#### Creacion del GrC!fico 
 
 # Secuencia de edades para utilizar en el perfil de ingreso segun el Size de la muestra de la base de datos
 Edad_f = seq(min(Tabla_4$Edad), max(Tabla_4$Edad), length.out = 7378)
@@ -572,7 +615,7 @@ dfpredm <- data.frame(
 graph_m <- ggplot(dfpredm, aes(x = Edad, y = Prediccionesm)) +
   geom_line(color = 'red') +
   geom_ribbon(aes(ymin = int_mujeres[, "lwr"], ymax = int_mujeres[, "upr"]), fill = 'red', alpha = 0.2) +
-  labs(x = 'Edad', y = 'Perfil de Ingreso', title = expression(atop("Predicción del Perfil de Ingreso Mujeres", ""))) +
+  labs(x = 'Edad', y = 'Perfil de Ingreso', title = expression(atop("PredicciC3n del Perfil de Ingreso Mujeres", ""))) +
   theme(plot.title = element_text(hjust = 0.5))+
   theme(axis.line = element_line(color = "gray"))+
   theme(panel.background = element_rect(fill = "transparent", color = NA),
@@ -583,7 +626,7 @@ graph_m
 graph_h <- ggplot(dfpredh, aes(x = Edad, y = Prediccionesh)) +
   geom_line(color = 'blue') +
   geom_ribbon(aes(ymin = int_hombres[, "lwr"], ymax = int_hombres[, "upr"]), fill = 'blue', alpha = 0.2) +
-  labs(x = 'Edad', y = 'Perfil de Ingreso', title = expression(atop("Predicción del Perfil de Ingreso Hombres", ""))) +
+  labs(x = 'Edad', y = 'Perfil de Ingreso', title = expression(atop("PredicciC3n del Perfil de Ingreso Hombres", ""))) +
   theme(plot.title = element_text(hjust = 0.5))+
   theme(axis.line = element_line(color = "gray"))+
   theme(panel.background = element_rect(fill = "transparent", color = NA),
@@ -591,7 +634,7 @@ graph_h <- ggplot(dfpredh, aes(x = Edad, y = Prediccionesh)) +
   coord_cartesian(xlim = c(18, 86), ylim = c(7.6, 9)) 
 graph_h
 
-#Gráfica Conjunta Hombre-Mujer
+#GrC!fica Conjunta Hombre-Mujer
 #Link_C1 <- "C:/Output R/Taller_1/Taller_1/views/graph4.jpeg"
 #jpeg(file = Link_C1, width = 1200, height = 600)
 plot_grid(graph_h,graph_m, ncol=2)
@@ -608,16 +651,16 @@ plot_grid(graph_h,graph_m, ncol=2)
 
 # a. Split Sample:--------------------------------------------------------------
 set.seed(123)
+
 sample_split <- initial_split(Tabla_4, prop = .7)
 
 # Create test and train data frames 
+
 train <- training(sample_split)
 test  <- testing(sample_split)
 
 
-# b. Report and compare the predictive performance in terms of the RMSE:--------
 
-# Especificaciones de modelos utilizados:
 model1 <- recipe(lw_hora~ Edad + Edad2, data = train)
 model2 <- recipe(lw_hora~ Sexo, data = train)
 model3 <- recipe(lw_hora~ Edad + Edad2 + Sexo, data = train)
@@ -628,93 +671,134 @@ model5 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato, data
 model6 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ, data = train)  %>%
   step_dummy(all_factor_predictors())
 model7 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + Sector, data = train)  %>%
+    step_dummy(all_factor_predictors())
+model8 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + Sector + Size_empresa, data = train)  %>%
+    step_dummy(all_factor_predictors())
+model9 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + Sector + Size_empresa + exp, data = train)  %>%
+    step_dummy(all_factor_predictors())
+model10 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector +Educ + Size_empresa + exp , data = train)  %>%
+    step_dummy(all_factor_predictors())
+model11 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + Sector + Size_empresa + exp, data = train)  %>%
+    step_interact(terms = ~ Sexo:Educ + Sexo:Estrato) %>%
+    step_dummy(all_factor_predictors())
+model12 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + Sector + Size_empresa + exp, data = train)  %>%
+  step_interact(terms = ~ Sexo:Educ + Sexo:Sector) %>%
   step_dummy(all_factor_predictors())
-model8 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ+ informal + Sector + Size_empresa, data = train)  %>%
-  step_dummy(all_factor_predictors())
-model9 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + Sector + Size_empresa, data = train)  %>%
-  step_dummy(all_factor_predictors())
-model10 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Size_empresa + exp , data = train)  %>%
-  step_dummy(all_factor_predictors())
-model10_2 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Size_empresa , data = train)  %>%
-  step_dummy(all_factor_predictors())
-model10_3 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Size_empresa + Educ , data = train)  %>%
-  step_dummy(all_factor_predictors())
-model10_4 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Size_empresa + Educ , data = train)  %>%
-  step_dummy(all_factor_predictors())
-
-model7_2 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + informal, data = train)  %>%
-  step_interact(terms = ~ Sexo:Educ + Sexo:Estrato) %>%
-  step_dummy(all_factor_predictors())
-model7_3 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + informal, data = train)  %>%
-  step_interact(terms = ~ Sexo:Educ + Sexo:informal) %>%
-  step_dummy(all_factor_predictors())
-model7_4 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + informal, data = train)  %>%
+model13 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + Sector + Size_empresa + exp, data = train)  %>%
   step_interact(terms = ~ Sexo:Educ + Sexo:Horas_trabajadas) %>%
   step_dummy(all_factor_predictors())
+model14 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + Sector + Size_empresa + exp + oficio, data = train)  %>%
+  step_interact(terms = ~ Sexo:Educ + Sexo:Horas_trabajadas) %>%
+  step_dummy(all_factor_predictors())
+model15 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + Sector + Size_empresa + exp + oficio + Horas_trabajadas2 , data = train)  %>%
+  step_interact(terms = ~ Sexo:Educ + Sexo:Horas_trabajadas) %>%
+  step_dummy(all_factor_predictors())
+model16 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + Sector + Size_empresa + exp + exp2 + oficio + Horas_trabajadas2 , data = train)  %>%
+  step_interact(terms = ~ Sexo:Educ + Sexo:Horas_trabajadas) %>%
+    step_dummy(all_factor_predictors())
 
 #List models
-modelos<-list(model1, model2, model3, model4, model5, model6, model7, model8, model9, model10, model10_2, model10_3, model10_4, model7_2, model7_3, model7_4)
 
-# Create loop to fit with workflows
+modelos<-list(model1, model2, model3, model4, model5, model6, model7, model8, model9, model10, model11, model12, model13, model14,model15,model16 )
+
+
+# Loop to FIT models with the package tidymodels
+
 
 fit_model <- function(x, df=train) {
-  linear_model <- linear_reg() # Modelo original es lineal
   
-  work_flow <- workflow() %>%  #Creación de los workflows
+  linear_model <- linear_reg()
+  
+  workflow <- workflow() %>% 
+    
     add_recipe(x) %>% 
-    add_model(linear_model) #Add recipes to tidymodels
-  
-  fit_model <- work_flow %>% #Fit models
+    add_model(lm_model) %>% 
+    model_with_fit <- workflow %>% 
     fit(data = df)
   
-  fit_model
+  model_with_fit
+  
 }
 
-modelos <- lapply(modelos, function(x){fit_model(x, train)})
+
+workflows_finales <- lapply(modelos, function(x){fit_model(x, train)})
+
 
 # Create loop to test
-predict_from_workflow <- function(w, df_test=test) {
-  predictions <- predict(w, new_data = df_test) %>% 
-    bind_cols(df_test)
+
+
+predicciones_wf <- function(w, df_test=test) {
+  predicciones_finales <- predict(w, new_data = df_test) %>% 
+    bind_cols(df_test) %>% 
+    mutate(Error = exp(logw) - exp(.pred)) 
+  predicciones_finales
   
-  predictions
 }
 
-rmse_from_predict <- function(pred) {
-  test_rmse <- rmse(pred, truth = lw_hora, estimate = .pred)
-  test_rmse$.estimate
+# Sacar RMSE
+
+rmse_predicciones <- function(pred) {
+  rmse_validation <- rmse(pred, truth = lw_hora, estimate = .pred)
+  rmse_validation$.estimate
+  
 }
 
-predictions <- lapply(modelos, function (w){predict_from_workflow(w, test)})
+pred_totales<- lapply(workflows_finales, function (w){predicciones_wf (w, test)})
+rmse_total <- lapply(pred_totales, function (pred){rmse_predicciones(pred)})
 
-rmse <- lapply(predictions, function (pred){rmse_from_predict(pred)})
+# Tabla de RMSE
 
-rmse_df <- data.frame(list_rmse) 
-rmse_df <- data.frame(
-  'Workflow' = c('model1', 'model2', 'model3', 'model4', 'model5', 'model6', 'model7', 'model8', 'model9','model10', 'model10_2', 'model10_3','model10_4', 'model7_2', 'model7_3', 'model7_4'),
-  'RMSE' = c('model1', 'model2', 'model3', 'model4', 'model5', 'model6', 'model7', 'model8', 'model9','model10', 'model10_2', 'model10_3','model10_4', 'model7_2', 'model7_3', 'model7_4')
-)
-
+rmse <- data.frame(rmse_total)
+colnames(rmse)<- c('model1', 'model2', 'model3', 'model4', 'model5', 'model6', 'model7', 'model8', 'model9','model10', 'model11','model12','model13','model14','model15','model16')
+rmse <- t(rmse)
+rmse <- data.frame(rmse)
+#Tabla_rmse <- "C:/Output R/Taller_1/Taller_1/rmse.xlsx"
+#write_xlsx(rmse , path = Tabla_rmse)
 
 # Elegir los modelos para menor RMSE:
+
 workflows_loocv <- rmse_df$Workflow[order(rmse_df$RMSE)[1:2]]
+
+# Calcular los errores de predicción y calculo el Histograma
+prediction_errors <- pred_totales$.pred - test$lw_hora
+hist(prediction_errors, main = "Distribución de Errores de Predicción", xlab = "Error de Predicción")
+summary(prediction_errors)
+
 
 ## D. LOOCV:
 
-loocv_model1 <- vector("numeric", length = nrow(Tabla_4))
-
+loocv_model1 <- vector("numeric", length = nrow(Tabla_4)) #Primer Modelo
 for (i in seq_len(nrow(Tabla_4))) {
-  loocv_data <- Tabla_4[-i, ]
-  loocv_fit <- modelos[[2]] %>% fit(data = loocv_data)
-  pred <- predict(loo_fit, new_data = slice(Tabla_4, i))$.pred
-  loocv_model1[i] <- pred
-  print(paste0("Iteration: ",i))
+    loocv_tabla4 <- Tabla_4[-i, ]
+    loocv_model_with_fit <- modelos[[2]] %>% fit(data = loocv_tabla4)
+    pred <- predict(loocv_model_with_fit, new_data = slice(Tabla_4, i))$.pred
+    loocv_model1[i] <- pred
+    print(paste0("Iteración: ", i))
+  
 }
 
-loocv_prediction <-bind_cols(Tabla_4$lw_hora, loocv_model1)
+loocv_prediccion_final <- data.frame(lw_hora = Tabla_4$lw_hora, loocv_model1 = loocv_model1)
+loocv_rmse <- rmse(data = loocv_prediccion_final, truth = lw_hora, estimate = loocv_model1)
+loocv_rmse
 
-loocv_rmse <- rmse(temp, truth = ...1, estimate = ...2)
+loocv_model2 <- vector("numeric", length = nrow(Tabla_4)) #Segundo Modelo
 
-loocv_rmse$.estimate
 
-  
+for (i in seq_len(nrow(Tabla_4))) {
+    loocv_tabla4 <- Tabla_4[-i, ]
+    loocv_model_with_fit <- modelos[[15]] %>% fit(data = loocv_tabla4)
+    pred <- predict(loocv_model_with_fit, new_data = slice(Tabla_4, i))$.pred
+    loocv_model1[i] <- pred
+    print(paste0("Iteration: ", i))
+   
+}
+
+loocv_prediccion_final <- data.frame(lw_hora = Tabla_4$lw_hora, loocv_model2 = loocv_model2)
+loocv_rmse <- rmse(data = loocv_prediccion_final, truth = lw_hora, estimate = loocv_model2)
+loocv_rmse
+
+
+
+
+
+
