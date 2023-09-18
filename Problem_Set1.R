@@ -384,7 +384,7 @@ Tabla_4 <-Tabla_4 %>% mutate(lw_hora_Resid=lm(lw_hora~ Edad + Edad2+ Educ + exp 
 #3) Regresión de los residuos de la Reg1 sobre los residuos de la Reg2
 Reg_bs2<-lm(lw_hora_Resid ~ Mujer_Resid,Tabla_4)
 
-Mod3_stargazer <- stargazer(Reg_bs1,Reg_bs2,type="text",digits=3, omit.stat=c("ser","f","adj.rsq")) 
+Mod3_stargazer <- stargazer(Reg_bs1,Reg_bs2,type="text",digits=6, omit.stat=c("ser","f","adj.rsq")) 
 Mod3_stargazer <- as.data.frame(Mod3_stargazer)
 #Reg3 <- "C:/Output R/Taller_1/Taller_1/Mod3_stargazer.xlsx"
 #write_xlsx(Mod3_stargazer, path = Reg3)
@@ -394,8 +394,8 @@ Coefs2 <- Reg_bs1$coefficients
 SE2 <- (exp(Coefs2)-1)*100
 Sig_Economica2 <- round(SE2/Media_w_hora*100, digits = 3)
 Sig_Economica2 <- as.data.frame(Sig_Economica2)
-#T3 <- "C:/Output R/Taller_1/Taller_1/T3_Se.xlsx"
-#write_xlsx(Sig_Economica2, path = T3)
+T3 <- "C:/Output R/Taller_1/Taller_1/T3_Se.xlsx"
+write_xlsx(Sig_Economica2, path = T3)
 
 # Significancia EconC3mica parámetros
 Coefs3 <- Reg_bs2$coefficients
@@ -411,8 +411,7 @@ B <- 1000
 # Matrices para almacenar los resultados de fwl_mod1 y fwl_mod2
 coef_mod1 <- matrix(NA, nrow = B, ncol = 2)  # Coeficientes de fwl_mod1
 coef_mod2 <- matrix(NA, nrow = B, ncol = 2)  # Coeficientes de fwl_mod2
-diff_mod <- matrix(NA, nrow = B, ncol = 1)  # diferencia de los coeficientes fwl_mod1 y fwl_mod2
-diff_error <- matrix(NA, nrow = B, ncol = 1)  # diferencia de errores estandar fwl_mod1 y fwl_mod2
+
 
 # Realizar el proceso de Bootstrap
 set.seed(123)
@@ -441,8 +440,6 @@ boots_fwl <- for (i in 1:B) {
   
   coef_mod2[i, 1] <- coef(fwl_mod2)["Mujer_Resid"]
   coef_mod2[i, 2] <- summary(fwl_mod2)$coefficients["Mujer_Resid", "Std. Error"]
-  diff_mod[i] <-coef_mod1[i, 1]-coef_mod2[i, 1]
-  diff_error[i] <-coef_mod1[i, 2]-coef_mod2[i, 2]
   
 }
 
@@ -458,15 +455,6 @@ Mod_Comparativos <- stargazer(Reg_bs1,Reg_bs2, fwl_mod1, fwl_mod2, type="text",d
 Mod_Comparativos <- as.data.frame(Mod_Comparativos)
 #Reg_Comp <- "C:/Output R/Taller_1/Taller_1/Mod_Comparativos.xlsx"
 #write_xlsx(Mod_Comparativos, path = Reg_Comp)
-
-## Calular intervalos de confianza para la diferencia entre los coeficientes y errores estandar
-interval_diff_mod <- quantile(diff_mod, c(0.025, 0.975))
-interval_diff_error <- quantile(diff_error, c(0.025, 0.975))
-# Imprimir los intervalos de confianza para fwl_mod1
-cat("IC Bootstrap para el coeficiente de mujer en fwl_mod1:", interval_diff_mod[1], "-", interval_diff_mod[2], "\n")
-
-# Imprimir los intervalos de confianza para fwl_mod2
-cat("IC Bootstrap para el coeficiente de mujerResid en fwl_mod2:", interval_diff_error[1], "-", interval_diff_error[2], "\n")
 
 print(coef_mod1)
 print(coef_mod2)
