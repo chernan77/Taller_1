@@ -46,11 +46,15 @@ model13 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Ed
 Tabla_4$Horas_trabajadas2 <- Tabla_4$Horas_trabajadas^2 # ConstrucciC3n de la variable Horas trabajadas al cuadrado
 
 model14 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + Sector + Size_empresa + exp + oficio, data = train)  %>%
-  step_interact(terms = ~ Sexo:Oficio + Oficio:Educ) %>%
+  step_interact(terms = ~ Sexo:Educ + Sexo:Horas_trabajadas) %>%
   step_dummy(all_factor_predictors())
 
 model15 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + Sector + Size_empresa + exp + oficio + Horas_trabajadas2 , data = train)  %>%
-  step_interact(terms = ~ Sexo:Oficio + Oficio:Educ) %>%
+  step_interact(terms = ~ Sexo:Educ + Sexo:Horas_trabajadas) %>%
+  step_dummy(all_factor_predictors())
+
+model16 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + Sector + Size_empresa + exp + exp2 + oficio + Horas_trabajadas2 , data = train)  %>%
+  step_interact(terms = ~ Sexo:Educ + Sexo:Horas_trabajadas) %>%
   step_dummy(all_factor_predictors())
 
 #List models
@@ -90,6 +94,18 @@ rmse_predicciones <- function(pred) {
 
 predictions_totales <- lapply(modelos, function (w){predicciones_wf(w, test)})
 rmse_totales <- lapply(predictions_totales, function (pred){rmse_predicciones(pred)})
+
+selected_model <- modelos[[16]]  # Reemplaza con el modelo seleccionado
+predictions <- predict(selected_model, new_data = test)
+
+
+# Calcular los errores de predicción
+prediction_errors <- predicciones_finales$.pred - test$lw_hora
+hist(prediction_errors, main = "Distribución de Errores de Predicción", xlab = "Error de Predicción")
+summary(prediction_errors)
+
+
+
 
 
 
