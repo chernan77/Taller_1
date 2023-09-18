@@ -729,8 +729,7 @@ workflows_finales <- lapply(modelos, function(x){fit_model(x, train)})
 
 predicciones_wf <- function(w, df_test=test) {
   predicciones_finales <- predict(w, new_data = df_test) %>% 
-    bind_cols(df_test) %>% 
-    mutate(Error = exp(logw) - exp(.pred)) 
+  bind_cols(df_test) %>% 
   predicciones_finales
   
 }
