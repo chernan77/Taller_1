@@ -28,11 +28,8 @@
 #install.packages("cowplot") #extensión de "ggplot2" en R que facilita la creación de gráficos complejos
 #install.packages("modeest") # para calcular y estimar la moda 
 #install.packages("psych")
-install.packages("yardstick")
-install.packages("tidymodels")
 
-# Cargar los Paquetes
-library(yardstick)
+# Cargaos los Paquetes
 library(modeest)
 library(rvest)
 library(purrr)
@@ -54,13 +51,12 @@ library(readxl)
 library(openxlsx)
 library(cowplot)
 library(psych)
-library(tidymodels)
 p_load(tidyverse, skimr, stargazer, tidymodels, broom,knitr,kableExtra)
 
 #-----------------------------------------------EJERCICIO 1----------------------------------------------#
 #Importar data
-# Se importa la data desde la página web "https://ignaciomsarmiento.github.io/GEIH2018 sample/ que contiene la data de 
-#la encuesta  GEIH de Bogota from the 2018 "MediciC3n de Pobreza Monetaria y Desigualdad Report
+# Se importa la data desde la pagina web "https://ignaciomsarmiento.github.io/GEIH2018 sample/ que contiene la data de 
+#la encuesta  GEIH de Bogota from the 2018 "Medición de Pobreza Monetaria y Desigualdad Report
 #este código se utiliza para realizar web scraping en varias páginas web cuyas URL se encuentran en el vector urls
 
 urls <- c("https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_1.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_2.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_3.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_4.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_5.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_6.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_7.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_8.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_9.html","https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_10.html")
@@ -79,7 +75,7 @@ Import_data <- function(urls) {
 
 Tablas <- map(urls, Import_data)
 dataframes <- map(Tablas, as.data.frame)
-Tabla_Total <- bind_rows(dataframes) # Se combinan todas las tablas en un unico dataframe llamado Tabla_Total
+Tabla_Total <- bind_rows(dataframes) # Se combinan todas las tablas en un único dataframe llamado Tabla_Total
 
 ####-------------------------------------Limpieza de Datos------------------------------------------####
 
@@ -128,8 +124,8 @@ Tabla_4$totalHoursWorked[Tabla_4$totalHoursWorked > 72] <- umbral
 Moda_Exp <- as.numeric(names(sort(table(Tabla_4$p6426), decreasing = TRUE)[1]))
 Tabla_4$p6426[Tabla_4$p6426 > 68] <- Moda_Exp
 
-# Renombrar las variables para una mayor comprensión de las variables que estamos trabajando
-Tabla_4 <- Tabla_4 %>% rename(c_mne=p6210) #Nivel educativo más alto
+# Renombrar las variables para una mayor comprension de que variables estamos trabajando
+Tabla_4 <- Tabla_4 %>% rename(c_mne=p6210) #Nivel educativo mas alto
 Tabla_4 <- Tabla_4 %>% rename(Edad=age) # edad
 Tabla_4 <- Tabla_4 %>% rename(Sexo=sex) #sexo
 Tabla_4 <- Tabla_4 %>% rename(n_esc_apr=p6210s1) #escolaridad
@@ -165,7 +161,7 @@ Tabla_Stat <- Tabla_4  %>% select(Horas_trabajadas,
                                   Estrato)
 stargazer(data.frame(Tabla_Stat), header=FALSE, type='text',title="Estadisticas Descriptivas Variables Seleccionadas")
 
-## Asignando etiquetas a la variable Nivel Educativo
+## asignando etiquetas a la variable Nivel Educativo
 Tabla_4 <- Tabla_4 %>%
   mutate(Nivel_Educativo = case_when(
     Educ == 1 ~ "Ninguna",
@@ -232,7 +228,7 @@ Tabla_ingresos_edad <- Tabla_ingresos_edad %>%
 Tabla_ingresos_edad
 
 
-# Transformación de variables para el Modelo en Base a la teoría de Mincer
+# Transformación de variables para el Modelo en Base a la Teoría Mincer
 Tabla_4$Sector <- ifelse(Tabla_4$formal == 1 & Tabla_4$informal == 0, 1, 0) # dummy del sector formal e informal
 Tabla_4$lw_hora <- log(Tabla_4$w_hora) # Transformación Logaritmica del salario por hora
 Tabla_4$exp2 <- Tabla_4$exp^2  # Construcción de la variable experiencia al cuadrado
@@ -259,7 +255,7 @@ Tabla_Sexo <- as.data.frame(Tabla_Sexo)
 #jpeg(file = Link_C1, width = 800, height = 300)
 Graph_we <- ggplot(Tabla_4, aes(x = Nivel_Educativo, y = lw_hora)) +
   geom_point(alpha = 0.5, color = "red") +
-  labs(x = "EducaciC3n", y = "Salario por Hora", title = "Grafica 1: Colombia 2018:RelaciC3n entre Salario y la EducaciC3n") +
+  labs(x = "Educación", y = "Salario por Hora", title = "Grafica 1: Colombia 2018:Relación entre Salario y la Educación") +
   theme_minimal() +
   theme(panel.grid.major = element_line(color = "gray"),
         axis.line = element_line(color = "gray"),
@@ -282,7 +278,7 @@ SE0 <- (exp(Coef)-1)*100
 Sig_Economica <- round((SE0/Media_w_hora)*100, digits = 3)
 Sig_Economica <- as.data.frame(Sig_Economica)
 #T1 <- "C:/Output R/Taller_1/Taller_1/T1_Se.xlsx"
-#write_xlsx(Sig_EconC3mica, path = T1 )
+#write_xlsx(Sig_Económica, path = T1 )
 
 
 ##--------------------------------------------EJERCICIO_3----------------------------------------------##
@@ -295,7 +291,7 @@ Mod2_stargazer <- as.data.frame(Mod2_stargazer)
 #Reg <- "C:/Output R/Taller_1/Taller_1/Mod2_stargazer.xlsx"
 #write_xlsx(Mod2_stargazer, path = Reg )
 
-#---------------------------------3.B) Significancia EconC3mica parC!metros--------------------------------#
+#---------------------------------3.B) Significancia Económica parámetros--------------------------------#
 Coefs <- Mod2$coefficients
 SE1 <- (exp(Coefs)-1)*100
 Sig_Economica1 <- round(SE1/Media_w_hora*100, digits = 3)
@@ -344,7 +340,7 @@ Interv_Conf <- predict(Mod2, newdata = data.frame(Edad = Edad_seq, Edad2 = Edad_
 lwr <- exp(Interv_Conf[, "lwr"])
 upr <- exp(Interv_Conf[, "upr"])
 
-## Se construye el GrC!fico del Perfil de Ingreso
+## Se construye el Gráfico del Perfil de Ingreso
 Link_C <- "C:/Output R/Taller_1/Taller_1/views/graph2.jpeg"
 jpeg(file = Link_C, width = 900, height = 600)
 plot(Edad_seq, Perfil_Ingreso, type = "l", xlab = "Edad", ylab = "Salario por Hora Estimado", main = "Grafica 2: Perfil Estimado de Edad-Ingresos")  # Vuelve a crear el grC!fico dentro de png()
@@ -397,7 +393,7 @@ Sig_Economica2 <- as.data.frame(Sig_Economica2)
 #T3 <- "C:/Output R/Taller_1/Taller_1/T3_Se.xlsx"
 #write_xlsx(Sig_Economica2, path = T3)
 
-# Significancia EconC3mica parámetros
+# Significancia Económica parámetros
 Coefs3 <- Reg_bs2$coefficients
 SE3 <- (exp(Coefs3)-1)*100
 Sig_Economica3 <- round(SE3/Media_w_hora*100, digits = 3)
@@ -454,7 +450,7 @@ Mod4_stargazer <- as.data.frame(Mod4_stargazer)
 #Comparativo de regresiones con y sin Bootstrap:
 Mod_Comparativos <- stargazer(Reg_bs1,Reg_bs2, fwl_mod1, fwl_mod2, type="text",digits=3, 
                               omit.stat=c("ser","f","adj.rsq"),
-                              notes = c("Notas: (1) y (2) con muestra C:nica y (3) y (4) con Bootstrap"))
+                              notes = c("Notas: (1) y (2) con muestra única y (3) y (4) con Bootstrap"))
 Mod_Comparativos <- as.data.frame(Mod_Comparativos)
 #Reg_Comp <- "C:/Output R/Taller_1/Taller_1/Mod_Comparativos.xlsx"
 #write_xlsx(Mod_Comparativos, path = Reg_Comp)
@@ -473,7 +469,7 @@ print(coef_mod2)
 
 #################################################Ejercicio 4.c##############################################
 
-### Cálculo de la diferencias de edades
+### Calculo de la diferencias de edades
 
 n <- 1000
 # Vectores para almacenar las edades máximas y las diferencias en edades máximas
@@ -490,7 +486,7 @@ for (i in 1:n) {
   Mod5 <- lm(lw_hora ~ Edad + Edad2 + mujer + Edad*mujer + Edad2*mujer, data = datos_diff)
   coefs2 <- coef(Mod5)
   
-  # El coeficiente correspondiente a 'Edad' en la regresión lineal
+  # El coeficiente correspondiente a 'Edad' en la regresiCon lineal
   d1 <- coefs2['Edad']
   d2 <- coefs2['Edad2']
   d3 <- coefs2['Edad:mujer']
@@ -526,7 +522,7 @@ Mod5_stargazer <- as.data.frame(Mod5_stargazer)
 #Reg5 <- "C:/Output R/Taller_1/Taller_1/Mod5_stargazer.xlsx"
 #write_xlsx(Mod5_stargazer, path = Reg5)
 
-# Significancia EconC3mica parC!metros
+# Significancia Económica parámetros
 Coefs4 <- Mod5$coefficients
 SE3 <- (exp(Coefs4)-1)*100
 Sig_Economica3 <- round(SE2/Media_w_hora*100, digits = 3)
@@ -534,7 +530,7 @@ Sig_Economica3 <- as.data.frame(Sig_Economica3)
 #T4 <- "C:/Output R/Taller_1/Taller_1/T4_Se.xlsx"
 #write_xlsx(Sig_Economica3, path = T4 )
 
-#### Creacion del GrC!fico 
+#### Creacion del Gráfico 
 
 # Secuencia de edades para utilizar en el perfil de ingreso segun el Size de la muestra de la base de datos
 Edad_f = seq(min(Tabla_4$Edad), max(Tabla_4$Edad), length.out = 7378)
@@ -576,7 +572,7 @@ dfpredm <- data.frame(
 graph_m <- ggplot(dfpredm, aes(x = Edad, y = Prediccionesm)) +
   geom_line(color = 'red') +
   geom_ribbon(aes(ymin = int_mujeres[, "lwr"], ymax = int_mujeres[, "upr"]), fill = 'red', alpha = 0.2) +
-  labs(x = 'Edad', y = 'Perfil de Ingreso', title = expression(atop("PredicciC3n del Perfil de Ingreso Mujeres", ""))) +
+  labs(x = 'Edad', y = 'Perfil de Ingreso', title = expression(atop("Predicción del Perfil de Ingreso Mujeres", ""))) +
   theme(plot.title = element_text(hjust = 0.5))+
   theme(axis.line = element_line(color = "gray"))+
   theme(panel.background = element_rect(fill = "transparent", color = NA),
@@ -587,7 +583,7 @@ graph_m
 graph_h <- ggplot(dfpredh, aes(x = Edad, y = Prediccionesh)) +
   geom_line(color = 'blue') +
   geom_ribbon(aes(ymin = int_hombres[, "lwr"], ymax = int_hombres[, "upr"]), fill = 'blue', alpha = 0.2) +
-  labs(x = 'Edad', y = 'Perfil de Ingreso', title = expression(atop("PredicciC3n del Perfil de Ingreso Hombres", ""))) +
+  labs(x = 'Edad', y = 'Perfil de Ingreso', title = expression(atop("Predicción del Perfil de Ingreso Hombres", ""))) +
   theme(plot.title = element_text(hjust = 0.5))+
   theme(axis.line = element_line(color = "gray"))+
   theme(panel.background = element_rect(fill = "transparent", color = NA),
@@ -595,7 +591,7 @@ graph_h <- ggplot(dfpredh, aes(x = Edad, y = Prediccionesh)) +
   coord_cartesian(xlim = c(18, 86), ylim = c(7.6, 9)) 
 graph_h
 
-#GrC!fica Conjunta Hombre-Mujer
+#Gráfica Conjunta Hombre-Mujer
 #Link_C1 <- "C:/Output R/Taller_1/Taller_1/views/graph4.jpeg"
 #jpeg(file = Link_C1, width = 1200, height = 600)
 plot_grid(graph_h,graph_m, ncol=2)
@@ -639,11 +635,11 @@ model9 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Edu
   step_dummy(all_factor_predictors())
 model10 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Size_empresa + exp , data = train)  %>%
   step_dummy(all_factor_predictors())
-model10_2 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Size_empresa, data = train)  %>%
+model10_2 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Size_empresa , data = train)  %>%
   step_dummy(all_factor_predictors())
-model10_3 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Size_empresa + Educ, data = train)  %>%
+model10_3 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Size_empresa + Educ , data = train)  %>%
   step_dummy(all_factor_predictors())
-model10_4 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Size_empresa + Educ, data = train)  %>%
+model10_4 <- recipe(lw_hora~ Edad + Sexo + Horas_trabajadas + Estrato + Sector + Size_empresa + Educ , data = train)  %>%
   step_dummy(all_factor_predictors())
 
 model7_2 <- recipe(lw_hora~ Edad + Edad2 + Sexo + Horas_trabajadas + Estrato + Educ + informal, data = train)  %>%
@@ -664,7 +660,7 @@ modelos<-list(model1, model2, model3, model4, model5, model6, model7, model8, mo
 fit_model <- function(x, df=train) {
   linear_model <- linear_reg() # Modelo original es lineal
   
-  work_flow <- workflow() %>%  #Creaci??n de los workflows
+  work_flow <- workflow() %>%  #Creación de los workflows
     add_recipe(x) %>% 
     add_model(linear_model) #Add recipes to tidymodels
   
@@ -693,7 +689,7 @@ predictions <- lapply(modelos, function (w){predict_from_workflow(w, test)})
 
 rmse <- lapply(predictions, function (pred){rmse_from_predict(pred)})
 
-rmse_df <- data.frame(rmse) 
+rmse_df <- data.frame(list_rmse) 
 rmse_df <- data.frame(
   'Workflow' = c('model1', 'model2', 'model3', 'model4', 'model5', 'model6', 'model7', 'model8', 'model9','model10', 'model10_2', 'model10_3','model10_4', 'model7_2', 'model7_3', 'model7_4'),
   'RMSE' = c('model1', 'model2', 'model3', 'model4', 'model5', 'model6', 'model7', 'model8', 'model9','model10', 'model10_2', 'model10_3','model10_4', 'model7_2', 'model7_3', 'model7_4')
@@ -710,20 +706,15 @@ loocv_model1 <- vector("numeric", length = nrow(Tabla_4))
 for (i in seq_len(nrow(Tabla_4))) {
   loocv_data <- Tabla_4[-i, ]
   loocv_fit <- modelos[[2]] %>% fit(data = loocv_data)
-  pred <- predict(loocv_fit, new_data = slice(Tabla_4, i))$.pred
+  pred <- predict(loo_fit, new_data = slice(Tabla_4, i))$.pred
   loocv_model1[i] <- pred
-  print(paste0("Iteration: ", i))
+  print(paste0("Iteration: ",i))
 }
 
-loocv_prediction <- data.frame(lw_hora = Tabla_4$lw_hora, loocv_model1 = loocv_model1)
+loocv_prediction <-bind_cols(Tabla_4$lw_hora, loocv_model1)
 
-loocv_rmse <- rmse(data = loocv_prediction, truth = lw_hora, estimate = loocv_model1)
+loocv_rmse <- rmse(temp, truth = ...1, estimate = ...2)
 
-loocv_rmse
-
-
-
-
-
+loocv_rmse$.estimate
 
   
