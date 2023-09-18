@@ -108,12 +108,26 @@ for (i in seq_len(nrow(Tabla_4))) {
   loocv_fit <- modelos[[2]] %>% fit(data = loocv_data)
   pred <- predict(loocv_fit, new_data = slice(Tabla_4, i))$.pred
   loocv_model1[i] <- pred
-  print(paste0("Iteration: ", i))
+  print(paste0("Iteración: ", i))
 }
 
 loocv_prediction <- data.frame(lw_hora = Tabla_4$lw_hora, loocv_model1 = loocv_model1)
 
 loocv_rmse <- rmse(data = loocv_prediction, truth = lw_hora, estimate = loocv_model1)
+
+loocv_rmse
+
+for (i in seq_len(nrow(Tabla_4))) {
+  loocv_data <- Tabla_4[-i, ]
+  loocv_fit <- modelos[[2]] %>% fit(data = loocv_data)
+  pred <- predict(loocv_fit, new_data = slice(Tabla_4, i))$.pred
+  loocv_model2[i] <- pred
+  print(paste0("Iteración: ", i))
+}
+
+loocv_prediction <- data.frame(lw_hora = Tabla_4$lw_hora, loocv_model2 = loocv_model2)
+
+loocv_rmse <- rmse(data = loocv_prediction, truth = lw_hora, estimate = loocv_model2)
 
 loocv_rmse
 
