@@ -1,4 +1,5 @@
-# Taller_1
+# Problem Set
+
 En este repositorio se encuentra la solución al ejercicio presentado en el Problem Set 1 sobre la predicción de ingresos. Este documento fue realizado por Celin Hernández, Merit Tejeda y Estefanía Laborde. 
 
 ## Descripción de archivos
