@@ -767,7 +767,7 @@ summary(prediction_errors)
 
 ## D. LOOCV:
 
-loocv_model1 <- vector("numeric", length = nrow(Tabla_4))
+loocv_model1 <- vector("numeric", length = nrow(Tabla_4)) #Primer Modelo
 for (i in seq_len(nrow(Tabla_4))) {
     loocv_tabla4 <- Tabla_4[-i, ]
     loocv_model_with_fit <- modelos[[2]] %>% fit(data = loocv_tabla4)
